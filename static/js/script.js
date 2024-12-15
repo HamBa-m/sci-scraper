@@ -164,3 +164,43 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
+
+function downloadResults() {
+    fetch('/download')
+        .then(response => response.blob())
+        .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'scholar_results.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        })
+        .catch(error => console.error('Error downloading results:', error));
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const downloadBtn = document.getElementById('downloadBtn');
+    if (downloadBtn) {
+        downloadBtn.addEventListener('click', downloadResults);
+    }
+});
+
+// Show download button when scraping is complete
+function updateProgress(data) {
+    // progress update code
+    const progressBar = document.querySelector('.progress-bar');
+    const progressText = document.getElementById('progress-text');
+    progressBar.style.width = `${data.progress}%`;
+    progressText.textContent = `${data.progress}%`;
+    
+    if (data.progress === 100) {
+        const downloadBtn = document.getElementById('downloadBtn');
+        if (downloadBtn) {
+            downloadBtn.classList.remove('hidden');
+        }
+    }
+}

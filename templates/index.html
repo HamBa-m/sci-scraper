@@ -5,69 +5,124 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Scholar Scraper</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
-    <!-- Change these lines in index.html -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </head>
 <body class="gradient-bg min-h-screen flex items-center justify-center p-4">
-    <div class="glass-effect rounded-xl p-8 w-full max-w-2xl shadow-2xl">
+    <div class="glass-effect rounded-xl p-8 w-full max-w-6xl shadow-2xl">
+        <!-- Header section remains the same -->
         <div class="text-center mb-8">
             <h1 class="text-4xl font-bold text-white mb-2">Scholar Scraper</h1>
             <p class="text-gray-200 text-lg">Extract research papers data with ease</p>
         </div>
 
-        <form class="space-y-6">
-            <div>
-                <label class="block text-white text-sm font-medium mb-2">Search Query</label>
-                <input type="text" name="query" 
-                    class="form-input w-full" 
-                    placeholder="Enter your search terms...">
-            </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- Left Column - Input Form -->
+            <div class="space-y-6">
+                <form class="space-y-6">
+                    <div>
+                        <label class="block text-white text-sm font-medium mb-2">Search Query</label>
+                        <input type="text" name="query" 
+                            class="form-input w-full" 
+                            placeholder="Enter your search terms...">
+                    </div>
 
-            <div>
-                <label class="block text-white text-sm font-medium mb-2">Number of Pages</label>
-                <input type="number" name="num_pages" min="1" 
-                    class="form-input w-full" 
-                    placeholder="Enter number of pages...">
-            </div>
+                    <div>
+                        <label class="block text-white text-sm font-medium mb-2">Number of Pages</label>
+                        <input type="number" name="num_pages" min="1" 
+                            class="form-input w-full" 
+                            placeholder="Enter number of pages...">
+                    </div>
 
-            <button type="submit" class="submit-button">
-                Start Scraping
-            </button>
-        </form>
+                    <button type="submit" class="submit-button">
+                        Start Scraping
+                    </button>
+                </form>
 
-        <div id="progress-container" class="mt-8 hidden">
-            <h3 class="text-white text-xl font-semibold mb-4">Scraping Progress</h3>
-            <div class="progress-container">
-                <div class="progress-bar"></div>
-            </div>
-            <p id="progress-text" class="text-white text-center">0%</p>
-
-            <div class="mt-6">
-                <h3 class="text-white text-xl font-semibold mb-4">Processed Papers</h3>
-                <div id="papers-list" class="papers-list">
-                    <!-- Papers will be added here dynamically -->
+                <div id="progress-container" class="mt-8 hidden">
+                    <h3 class="text-white text-xl font-semibold mb-4">Scraping Progress</h3>
+                    <div class="progress-container">
+                        <div class="progress-bar"></div>
+                    </div>
+                    <p id="progress-text" class="text-white text-center">0%</p>
                 </div>
             </div>
-        </div>
 
-        {% if stats %}
-        <div id="results-container" class="mt-8">
-            <h2 class="text-white text-2xl font-bold mb-4">Scraping Summary</h2>
-            <div class="stats-container">
-                <pre id="results-pre" class="whitespace-pre-wrap text-white">{{ stats }}</pre>
+            <!-- Right Column - Results -->
+            <div class="space-y-6">
+                {% if stats %}
+                <div id="results-container" class="mt-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-white text-2xl font-bold">Scraping Results</h2>
+                        <button id="downloadBtn" class="download-button">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            Download Results
+                        </button>
+                    </div>
+
+                    <!-- Overall Summary Cards -->
+                    <div class="stats-grid mb-6">
+                        <div class="stat-card">
+                            <h3>Total Papers</h3>
+                            <p class="stat-value">{{ total_papers }}</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Papers with Abstracts</h3>
+                            <p class="stat-value">{{ papers_with_abstracts }}</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Abstract Success Rate</h3>
+                            <p class="stat-value">{{ "%.1f"|format(abstract_success_rate) }}%</p>
+                        </div>
+                    </div>
+
+                    <!-- Source Breakdown Table -->
+                    <div class="results-section">
+                        <h3 class="text-white text-xl font-semibold mb-4">Breakdown by Source</h3>
+                        <div class="results-table-container">
+                            <table class="results-table">
+                                <thead>
+                                    <tr>
+                                        <th>Source</th>
+                                        <th class="text-right">Papers with Abstract</th>
+                                        <th class="text-right">Total Papers</th>
+                                        <th class="text-right">Success Rate</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for source in source_stats %}
+                                    <tr>
+                                        <td>{{ source.Source }}</td>
+                                        <td class="text-right">{{ source['Papers with Abstract'] }}</td>
+                                        <td class="text-right">{{ source['Total Papers'] }}</td>
+                                        <td class="text-right">{{ "%.1f"|format(source['Success Rate (%)']) }}%</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Other Sources Section -->
+                    {% if other_sources %}
+                    <div class="results-section mt-6">
+                        <h3 class="text-white text-xl font-semibold mb-4">Other Sources</h3>
+                        <div class="other-sources-grid">
+                            {% for source in other_sources %}
+                            <div class="other-source-item">
+                                <span class="source-name">{{ source.name }}</span>
+                                <span class="source-count">{{ source.count }} papers</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
             </div>
-            <p class="text-white mt-4">Results saved to <span class="font-bold">scholar_results.xlsx</span></p>
         </div>
-        {% else %}
-        <div id="results-container" class="mt-8 hidden">
-            <h2 class="text-white text-2xl font-bold mb-4">Scraping Summary</h2>
-            <div class="stats-container">
-                <pre id="results-pre" class="whitespace-pre-wrap text-white"></pre>
-            </div>
-            <p class="text-white mt-4">Results saved to <span class="font-bold">scholar_results.xlsx</span></p>
-        </div>
-        {% endif %}
     </div>
 </body>
 </html>

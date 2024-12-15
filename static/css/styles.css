@@ -21,6 +21,19 @@
     border: 1px solid rgba(255, 255, 255, 0.18);
 }
 
+/* Two-column layout styles */
+.content-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+}
+
+@media (min-width: 768px) {
+    .content-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
 /* Form elements */
 .form-input {
     padding: 0.75rem 1rem;
@@ -29,6 +42,7 @@
     border: 1px solid rgba(255, 255, 255, 0.3);
     color: white;
     transition: all 0.2s ease;
+    width: 100%;
 }
 
 .form-input::placeholder {
@@ -81,10 +95,10 @@
 
 /* Papers list */
 .papers-list {
-    max-height: 15rem;
+    max-height: 400px;
     overflow-y: auto;
-    space-y: 0.5rem;
     padding-right: 0.5rem;
+    margin-bottom: 1rem;
 }
 
 .papers-list::-webkit-scrollbar {
@@ -102,6 +116,12 @@
 }
 
 /* Results section */
+.results-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
 .results-pre {
     background: rgba(255, 255, 255, 0.2);
     border-radius: 0.5rem;
@@ -111,58 +131,14 @@
     font-family: 'Courier New', monospace;
 }
 
-/* Responsive adjustments */
-@media (max-width: 640px) {
-    .glass-effect {
-        padding: 1.5rem;
-    }
-
-    .form-input, .submit-button {
-        padding: 0.625rem 0.875rem;
-    }
-}
-
-/* Animations */
-.fade-in {
-    animation: fadeIn 0.3s ease-in;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
-/* Paper item animation */
-.paper-item {
-    padding: 0.75rem;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 0.5rem;
-    color: white;
-    margin-bottom: 0.5rem;
-    animation: slideIn 0.3s ease-out;
-}
-
-@keyframes slideIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* Add these styles to your existing CSS file */
-
+/* Stats container */
 .stats-container {
     background: rgba(255, 255, 255, 0.1);
     border-radius: 0.5rem;
     padding: 1.5rem;
     margin-top: 1rem;
-    font-family: 'Courier New', monospace;
-    white-space: pre-wrap;
-    overflow-x: auto;
+    height: 100%;
+    overflow-y: auto;
 }
 
 .stats-container h3 {
@@ -192,4 +168,275 @@
 
 .stat-item:hover {
     background: rgba(255, 255, 255, 0.1);
+}
+
+/* Paper item animation */
+.paper-item {
+    padding: 0.75rem;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 0.5rem;
+    color: white;
+    margin-bottom: 0.5rem;
+    animation: slideIn 0.3s ease-out;
+}
+
+/* Animations */
+.fade-in {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+    .glass-effect {
+        padding: 1.5rem;
+    }
+
+    .form-input, .submit-button {
+        padding: 0.625rem 0.875rem;
+    }
+    
+    .papers-list {
+        max-height: 300px;
+    }
+
+    .stats-container {
+        padding: 1rem;
+    }
+}
+
+/* Download button */
+.download-button {
+    background-color: rgb(16, 185, 129);
+    color: white;
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+}
+
+.download-button:hover {
+    background-color: rgb(5, 150, 105);
+    transform: scale(1.02);
+}
+
+/* Stats grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.stat-card {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 1rem;
+    border-radius: 0.5rem;
+    text-align: center;
+}
+
+.stat-card h3 {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+}
+
+.stat-card .stat-value {
+    color: white;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+/* Results table */
+.results-table-container {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    overflow-x: auto;
+}
+
+.results-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    color: white;
+}
+
+.results-table th {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 0.75rem 1rem;
+    text-align: left;
+    font-weight: 600;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.results-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.results-table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* Ensure table headers stay visible during scroll */
+.results-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+/* Stats Grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.stat-card {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    text-align: center;
+    transition: transform 0.2s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.stat-card h3 {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+}
+
+.stat-card .stat-value {
+    color: white;
+    font-size: 1.75rem;
+    font-weight: 600;
+}
+
+/* Results Sections */
+.results-section {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+/* Results Table */
+.results-table-container {
+    overflow-x: auto;
+    margin: 0 -0.5rem;
+}
+
+.results-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    color: white;
+}
+
+.results-table th {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 0.75rem 1rem;
+    text-align: left;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.results-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.results-table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* Other Sources Grid */
+.other-sources-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1rem;
+}
+
+.other-source-item {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.source-name {
+    color: white;
+    font-weight: 500;
+}
+
+.source-count {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.875rem;
+}
+
+/* Download Button */
+.download-button {
+    background-color: rgb(16, 185, 129);
+    color: white;
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+}
+
+.download-button:hover {
+    background-color: rgb(5, 150, 105);
+    transform: scale(1.02);
+}
+
+/* Responsive Adjustments */
+@media (max-width: 640px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .results-section {
+        padding: 1rem;
+    }
+    
+    .other-sources-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .results-table th,
+    .results-table td {
+        padding: 0.5rem;
+    }
+    
+    .results-table-container {
+        margin: 0 -1rem;
+        border-radius: 0;
+    }
 }

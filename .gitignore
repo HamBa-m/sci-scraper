@@ -3,3 +3,8 @@
 
 # ignore results folder
 results
+
+# misc
+
+# log
+log/*
