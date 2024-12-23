@@ -5,8 +5,9 @@ from bs4 import BeautifulSoup
 from tqdm import tqdm
 
 from scrapers import (
-    ArxivScraper, IeeeScraper, SpringerScraper, MlrScraper, AcmScraper, 
-    NeuripsScraper, MdpiScraper, ScienceDirectScraper
+    IeeeScraper, SpringerScraper, MlrScraper, 
+    NeuripsScraper, MdpiScraper, ScienceDirectScraper, ACMScraper,
+    AAAIScraper, JAIRScraper, JMLRScraper, IJCAIScraper
 )
 from utils import detect_source
 
@@ -15,14 +16,18 @@ class ScholarScraper:
         self.query = query
         self.num_pages = num_pages
         self.scrapers = {
-            'arXiv': ArxivScraper(),
+            # 'arXiv': ArxivScraper(),
             'IEEE': IeeeScraper(),
             'Springer': SpringerScraper(),
             'MLR': MlrScraper(),
-            'ACM': AcmScraper(),
+            'ACM': ACMScraper(),
             'NeurIPS': NeuripsScraper(),
             'MDPI': MdpiScraper(),
-            'ScienceDirect': ScienceDirectScraper()
+            'ScienceDirect': ScienceDirectScraper(),
+            'AAAI': AAAIScraper(),
+            'JAIR': JAIRScraper(),
+            'JMLR': JMLRScraper(),
+            'IJCAI': IJCAIScraper()
         }
 
     def scrape(self, callback=None):
@@ -43,6 +48,8 @@ class ScholarScraper:
                 
                 # Detect the source and retrieve abstract
                 source = detect_source(link)
+                if source == 'arXiv':
+                    continue # Skip arXiv papers
                 abstract = None
                 if source in self.scrapers:
                     scraper = self.scrapers[source]
@@ -60,7 +67,7 @@ class ScholarScraper:
                 }
                 results.append(paper_data)
                 
-                print(f"Processed article: {title[:50]}... | Source: {source} | Abstract found: {'Yes' if abstract else 'No'}")
+                # print(f"Processed article: {title[:50]}... | Source: {source} | Abstract found: {'Yes' if abstract else 'No'}")
                 
                 time.sleep(2)  # Delay to avoid blocking
                 # Update progress

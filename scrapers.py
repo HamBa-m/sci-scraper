@@ -5,6 +5,8 @@ import re
 import json
 import datetime as dt
 import time
+from typing import Optional
+from typing import Tuple
 
 from utils import user_cycle
 
@@ -115,80 +117,6 @@ class MlrScraper(AbstractScraper):
             print(f"Error fetching MLR abstract: {e}")
         return None
 
-
-class AcmScraper(AbstractScraper):
-    def get_abstract(self, url):
-        try:
-            headers = {
-                'User-Agent': next(user_cycle),
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                'Accept-Language': 'en-US,en;q=0.5',
-                'Connection': 'keep-alive',
-                'Cache-Control': 'no-cache',
-                'Pragma': 'no-cache',
-                'Referer': 'https://www.google.com/',
-                'DNT': '1'
-            }
-            response = requests.get(url, headers=headers, timeout=15)
-            soup = BeautifulSoup(response.text, 'html.parser')
-            abstract_elements = soup.select('div.article__abstract p, div.abstractSection p, div.abstract p')
-            if abstract_elements:
-                return ' '.join(elem.get_text().strip() for elem in abstract_elements)
-
-            abstract_elements = soup.find_all(['div', 'p'], class_=lambda x: x and 'abstract' in x.lower())
-            for elem in abstract_elements:
-                text = elem.get_text().strip()
-                if len(text) > 100:
-                    return text
-
-            script_tags = soup.find_all('script', {'type': 'application/ld+json'})
-            for script in script_tags:
-                try:
-                    data = json.loads(script.string)
-                    if isinstance(data, dict) and 'description' in data:
-                        return data['description']
-                except:
-                    continue
-
-            meta_desc = soup.find('meta', {'name': ['description', 'citation_abstract']})
-            if meta_desc:
-                return meta_desc.get('content', '').strip()
-        except Exception as e:
-            print(f"Error fetching ACM abstract: {e}")
-        return None
-
-    def get_abstract(self, url):
-        try:
-            headers = {
-                'User-Agent': next(user_cycle),
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-                'Accept-Language': 'en-US,en;q=0.5',
-                'Referer': 'https://www.google.com/',
-                'Connection': 'keep-alive',
-            }
-            response = requests.get(url, headers=headers, timeout=15)
-            soup = BeautifulSoup(response.text, 'html.parser')
-            abstract_section = soup.find('div', {'class': 'art-abstract'})
-            if abstract_section:
-                paragraphs = abstract_section.find_all('p')
-                return ' '.join([p.get_text(strip=True) for p in paragraphs])
-
-            meta_desc = soup.find('meta', {'name': 'citation_abstract'})
-            if meta_desc:
-                return meta_desc.get('content', '').strip()
-            
-            script_tags = soup.find_all('script', type='application/ld+json')
-            for script in script_tags:
-                try:
-                    data = json.loads(script.string)
-                    if isinstance(data, dict) and 'abstract' in data:
-                        return data['abstract']
-                except json.JSONDecodeError:
-                    continue
-        except Exception as e:
-            print(f"Error fetching MDPI abstract: {e}")
-        return None
-
 class NeuripsScraper(AbstractScraper):
     def get_abstract(self, url):
         """Extract abstract from NeurIPS papers."""
@@ -269,56 +197,268 @@ class MdpiScraper(AbstractScraper):
         return None
 
 class ScienceDirectScraper(AbstractScraper):
-    def get_abstract(self, url, last_check):
-        """Extract abstract from ScienceDirect papers with rate-limiting."""
+    def get_abstract(self, url: str, last_check: Optional[dt.datetime] = None) -> Tuple[Optional[str], dt.datetime]:
+        """
+        Extract abstract from ScienceDirect papers with rate-limiting and multiple fallback methods.
+        
+        Args:
+            url: The URL of the ScienceDirect paper
+            last_check: Timestamp of the last request to maintain rate limits. 
+                       If None, will use a timestamp far in the past.
+            
+        Returns:
+            Tuple of (abstract text or None, updated last_check timestamp)
+        """
         try:
             headers = {
                 'User-Agent': next(user_cycle),
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
                 'Accept-Language': 'en-US,en;q=0.5',
                 'Connection': 'keep-alive',
-                'Referer': 'https://www.google.com/'
+                'Referer': 'https://www.google.com/',
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache'
             }
-            min_interval = 10
-            delay = dt.datetime.now() - last_check
-            if delay.total_seconds() <= min_interval:
-                time.sleep(60 - delay.total_seconds())
+
+            # Handle rate limiting
+            current_time = dt.datetime.now()
+            if last_check is None:
+                last_check = current_time - dt.timedelta(seconds=11)  # Past minimum interval
+            
+            delay = current_time - last_check
+            if delay.total_seconds() <= 10:
+                time.sleep(11 - delay.total_seconds())
             last_check = dt.datetime.now()
 
-            response = requests.get(url, headers=headers, timeout=5)
+            # Make request with retry
+            response = requests.get(url, headers=headers, timeout=10)
             if response.status_code != 200:
                 return None, last_check
+            
             soup = BeautifulSoup(response.text, 'html.parser')
 
-            # Method 1: Try specific ScienceDirect abstract containers
+            # Method 1: Look for the exact structure
+            abstract_div = soup.find('div', {'class': 'abstract author'})
+            if abstract_div:
+                # Find the inner div containing the actual text
+                content_div = abstract_div.find('div', {'class': 'u-margin-s-bottom'})
+                if content_div:
+                    text = content_div.get_text().strip()
+                    if len(text) > 100:
+                        return text, last_check
+
+            # Method 2: More general selectors as backup
             abstract_selectors = [
-                'div.Abstracts', 'div.abstract', 'section.Abstract', 
-                'div.abstract-content', 'div.abstract-sec'
+                'div.abstract.author',
+                'div[class*="abstract"]',
+                'div.u-margin-s-bottom'
             ]
             for selector in abstract_selectors:
                 abstract_elem = soup.select_one(selector)
                 if abstract_elem:
-                    text_parts = [
-                        text.strip() for text in abstract_elem.stripped_strings
-                        if isinstance(text, NavigableString)
-                    ]
-                    return ' '.join(text_parts), last_check
+                    # Remove the "Abstract" heading if present
+                    heading = abstract_elem.find('h2', {'class': 'section-title'})
+                    if heading:
+                        heading.decompose()
+                    
+                    text = abstract_elem.get_text().strip()
+                    if len(text) > 100:
+                        return text, last_check
 
-            # Method 2: Look for JSON-LD data in script tags
-            script_tags = soup.find_all('script')
-            for script in script_tags:
-                if script.string and 'window.__PRELOADED_STATE__' in script.string:
-                    try:
-                        json_data = script.string.split('window.__PRELOADED_STATE__ = ')[1].strip()
-                        data = json.loads(json_data.rstrip(';'))
-                        if 'abstracts' in data and 'content' in data['abstracts']:
-                            for content in data['abstracts']['content']:
-                                if content.get('#name') == 'abstract':
-                                    for section in content.get('$$', []):
-                                        if section.get('#name') == 'abstract-sec':
-                                            return section.get('_', '').strip(), last_check
-                    except Exception as e:
-                        print(f"Error parsing ScienceDirect JSON data: {e}")
+            # Method 3: Look for spans within abstract divs
+            abstract_container = soup.find('div', {'class': ['abstract', 'abstract author']})
+            if abstract_container:
+                span_text = abstract_container.find('span')
+                if span_text:
+                    text = span_text.get_text().strip()
+                    if len(text) > 100:
+                        return text, last_check
+
         except Exception as e:
             print(f"Error fetching ScienceDirect abstract: {e}")
+            
         return None, last_check
+class AAAIScraper(AbstractScraper):
+    def get_abstract(self, url: str) -> Optional[str]:
+        """Extract abstract from AAAI papers."""
+        try:
+            headers = {
+                'User-Agent': next(user_cycle),
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.5',
+                'Connection': 'keep-alive',
+            }
+            response = requests.get(url, headers=headers, timeout=15)
+            soup = BeautifulSoup(response.text, 'html.parser')
+
+            # Method 1: Look for the specific AAAI article structure
+            article = soup.find('article', class_='obj_article_details')
+            if article:
+                abstract_section = article.find('section', class_='item abstract')
+                if abstract_section:
+                    # Remove the "Abstract" label if present
+                    label = abstract_section.find('h2', class_='label')
+                    if label:
+                        label.decompose()
+                    text = abstract_section.get_text().strip()
+                    if len(text) > 100:
+                        return text
+
+            # Method 2: Backup - look for any section with abstract class
+            abstract_section = soup.find('section', class_='abstract')
+            if abstract_section:
+                text = abstract_section.get_text().strip()
+                if len(text) > 100:
+                    return text
+
+            # Method 3: Look for meta tags as fallback
+            meta_abstract = soup.find('meta', {'name': 'citation_abstract'})
+            if meta_abstract and meta_abstract.get('content'):
+                return meta_abstract['content']
+
+        except Exception as e:
+            print(f"Error fetching AAAI abstract: {e}")
+        return None
+class JMLRScraper(AbstractScraper):
+    def get_abstract(self, url: str) -> Optional[str]:
+        """Extract abstract from JMLR papers."""
+        try:
+            headers = {
+                'User-Agent': next(user_cycle),
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.5',
+                'Connection': 'keep-alive',
+            }
+            response = requests.get(url, headers=headers, timeout=15)
+            soup = BeautifulSoup(response.text, 'html.parser')
+
+            # Method 1: Look for JMLR-specific abstract sections
+            abstract_sections = soup.select(
+                'div.abstract, div.paper-abstract, div.abstractText'
+            )
+            for section in abstract_sections:
+                text = section.get_text().strip()
+                if len(text) > 100:
+                    return text
+
+            # Method 2: Look for abstract after specific headers
+            for header in soup.find_all(['h2', 'h3']):
+                if 'abstract' in header.get_text().lower():
+                    next_elem = header.find_next('p')
+                    if next_elem and len(next_elem.get_text().strip()) > 100:
+                        return next_elem.get_text().strip()
+
+        except Exception as e:
+            print(f"Error fetching JMLR abstract: {e}")
+        return None
+
+class JAIRScraper(AbstractScraper):
+    def get_abstract(self, url: str) -> Optional[str]:
+        """Extract abstract from JAIR papers."""
+        try:
+            headers = {
+                'User-Agent': next(user_cycle),
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.5',
+                'Connection': 'keep-alive',
+            }
+            response = requests.get(url, headers=headers, timeout=15)
+            soup = BeautifulSoup(response.text, 'html.parser')
+
+            # Method 1: Look for JAIR-specific abstract containers
+            abstract_sections = soup.select(
+                'div.abstract, div.article-abstract, section.abstract-content'
+            )
+            for section in abstract_sections:
+                text = section.get_text().strip()
+                if len(text) > 100:
+                    return text
+
+            # Method 2: Look for metadata in Open Graph tags
+            meta_abstract = soup.find('meta', {'property': 'og:description'})
+            if meta_abstract and meta_abstract.get('content'):
+                return meta_abstract['content']
+
+        except Exception as e:
+            print(f"Error fetching JAIR abstract: {e}")
+        return None
+
+class ACMScraper(AbstractScraper):
+    def get_abstract(self, url: str) -> Optional[str]:
+        """Extract abstract from ACM Digital Library papers."""
+        try:
+            headers = {
+                'User-Agent': next(user_cycle),
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.5',
+                'Connection': 'keep-alive',
+            }
+            response = requests.get(url, headers=headers, timeout=15)
+            soup = BeautifulSoup(response.text, 'html.parser')
+
+            # Method 1: Look for ACM-specific abstract divs
+            abstract_sections = soup.select(
+                'div.abstractSection, div.abstract-text, div[class*="abstract"]'
+            )
+            for section in abstract_sections:
+                text = section.get_text().strip()
+                if len(text) > 100:
+                    return text
+
+            # Method 2: Look for structured data
+            for script in soup.find_all('script', {'type': 'application/ld+json'}):
+                try:
+                    data = json.loads(script.string)
+                    if isinstance(data, dict) and 'description' in data:
+                        return data['description']
+                except json.JSONDecodeError:
+                    continue
+
+            # Method 3: Look for meta tags
+            meta_abstract = soup.find('meta', {'name': 'citation_abstract'})
+            if meta_abstract and meta_abstract.get('content'):
+                return meta_abstract['content']
+
+        except Exception as e:
+            print(f"Error fetching ACM abstract: {e}")
+        return None
+
+class IJCAIScraper(AbstractScraper):
+    def get_abstract(self, url: str) -> Optional[str]:
+        """Extract abstract from IJCAI papers."""
+        try:
+            headers = {
+                'User-Agent': next(user_cycle),
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.5',
+                'Connection': 'keep-alive',
+            }
+            response = requests.get(url, headers=headers, timeout=15)
+            soup = BeautifulSoup(response.text, 'html.parser')
+
+            # Method 1: Look for IJCAI-specific abstract sections
+            abstract_sections = soup.select(
+                'div.abstract, div.paper-abstract, section#abstract-content'
+            )
+            for section in abstract_sections:
+                text = section.get_text().strip()
+                if len(text) > 100:
+                    return text
+
+            # Method 2: Look for JSON-LD data
+            for script in soup.find_all('script', {'type': 'application/ld+json'}):
+                try:
+                    data = json.loads(script.string)
+                    if isinstance(data, dict) and 'description' in data:
+                        return data['description']
+                except json.JSONDecodeError:
+                    continue
+
+            # Method 3: Look for abstract in meta tags
+            meta_abstract = soup.find('meta', {'name': ['description', 'citation_abstract']})
+            if meta_abstract and meta_abstract.get('content'):
+                return meta_abstract['content']
+
+        except Exception as e:
+            print(f"Error fetching IJCAI abstract: {e}")
+        return None

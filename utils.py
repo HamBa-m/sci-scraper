@@ -40,6 +40,7 @@ def detect_source(url):
         'ieee.org': 'IEEE',
         'ieeexplore.ieee.org': 'IEEE',
         'sciencedirect.com': 'ScienceDirect',
+        'www.sciencedirect.com': 'ScienceDirect',
         'springer.com': 'Springer',
         'link.springer.com': 'Springer',
         'acm.org': 'ACM',
@@ -71,7 +72,10 @@ def detect_source(url):
         'openaccess.thecvf.com': 'Computer Vision Foundation (CVF)',
         'openreview.net': 'OpenReview',
         'ora.ox.ac.uk': 'Oxford Research Archive (ORA)',
-        'search.ebscohost.com': 'EBSCOhost'
+        'search.ebscohost.com': 'EBSCOhost',
+        'jmlr.org': 'JMLR',
+        'jair.org': 'JAIR',
+        'ijcai.org': 'IJCAI',
     }
     
     return sources.get(domain, domain)

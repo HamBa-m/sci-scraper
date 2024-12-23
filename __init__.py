@@ -1,5 +1,5 @@
 # __init__.py
-from .scholar_scraper import ScholarScraper
+from .scholar import ScholarScraper
 from .data_handler import DataHandler
 from .scrapers import (
     AbstractScraper, ArxivScraper, IeeeScraper, SpringerScraper,

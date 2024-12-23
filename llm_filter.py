@@ -1,4 +1,4 @@
-# code to prompt LLaMa model API
+# code to prompt Phi3.5 model API
 from huggingface_hub import InferenceClient
 import pandas as pd
 import time
@@ -17,25 +17,16 @@ def prompt_model(prompt):
     except Exception as err:
         raise SystemExit(err)
 
-papers_plmr = pd.read_excel("PLMR_conference_papers_2018_2024.xlsx")
-print("PLMR papers shape:", papers_plmr.shape)
-papers_ijcai = pd.read_excel("IJCAI_conference_papers_2018_2024.xlsx")
-print("IJCAI papers shape:", papers_ijcai.shape)
-
-# merge the two dataframes
-papers = pd.concat([papers_ijcai, papers_plmr], ignore_index=True)
-# merge URL and Link columns in one column
-papers['URL'] = papers['URL'].fillna(papers['Link'])
-papers = papers.drop(columns=['Link'])
-# drop duplicates
-papers = papers.drop_duplicates(subset=['Title'])
-papers = papers.reset_index(drop=True)
+# read the conference papers xlsx file
+# papers = pd.read_excel("results/venues_results.xlsx")
+papers = pd.read_csv("results/scholar_results.csv")
 
 # add a boolean column to the dataframe
 papers['is_relevent'] = None
 
 # get the list of abstracts
-abstracts = papers['Abstract'].tolist()
+# abstracts = papers['Abstract'].tolist()
+abstracts = papers['abstract'].tolist()
     
 # loop through the abstracts and prompt the model
 i = 0
@@ -44,7 +35,7 @@ for abs in tqdm.tqdm(abstracts, total=len(abstracts), desc="Prompting Phi model"
     You are a helpful assistant who only answers by "YES" or "NO" or "I DON'T KNOW".<|end|>
     <|user|>
     {}\n
-    tell me if this abstract discusses adversarial attacks on multi agent deep reinforcement learning? yes or no or you don't know?<|end|>
+    tell me if this abstract discuses adversarial attacks on multi agent deep reinforcement learning algorithms? answer yes or no or you don't know? it should be using some MARL algo<|end|>
     <|assistant|>'''.format(abs)
     response_text = prompt_model(prompt)
     response_text = response_text.lower().replace(".", "").strip()
@@ -56,4 +47,12 @@ for abs in tqdm.tqdm(abstracts, total=len(abstracts), desc="Prompting Phi model"
     time.sleep(0.5)
     
 # save the dataframe to a new xlsx file
-papers.to_excel("conference_papers_with_adversarial_attacks_column.xlsx", index=False)
+papers.to_excel("scholar_papers_with_adversarial_attacks_column.xlsx", index=False)
+
+# filter the dataframe to get only the relevant papers
+relevant_papers = papers[papers['is_relevent'] == 1]
+print("Relevant papers shape:", relevant_papers.shape)
+
+# save the relevant papers to a new xlsx file
+# relevant_papers.to_excel("relevant_venues_papers.xlsx", index=False)
+relevant_papers.to_excel("relevant_scholar_papers.xlsx", index=False)
