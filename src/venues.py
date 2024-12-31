@@ -6,6 +6,8 @@ import re
 import tqdm
 import concurrent.futures
 from urllib.parse import urljoin
+from PyPDF2 import PdfReader
+import io
 import logging
 
 # -------------------- Configuration -------------------- #
@@ -39,8 +41,17 @@ VENUES = {
             2023: 237,
             2024: 238
         }
+    },
+    "AAMAS": {
+        "base_url": "https://www.ifaamas.org/Proceedings",
+        "proceedings_url_template": "https://www.ifaamas.org/Proceedings/aamas{year}/forms/contents.htm",
+        "paper_wrapper_class": "tr",  # Papers are in table rows
+        "title_selector": "a",
+        "details_selector": "td",
+        "abstract_page_selector": None,  # AAMAS has PDFs directly
+        "venue_name": "AAMAS",
+        "year_mapping": None  # Years are directly in the URL
     }
-    # Add other venues here as needed
 }
 
 # Keywords to filter papers related to Adversarial Machine Learning
@@ -211,6 +222,81 @@ def extract_paper_details_pmlr(paper_url, base_url, abstract_page_selector):
     details['Venue'] = "PMLR"
     return details
 
+# Add new extraction function for AAMAS papers:
+def extract_paper_links_aamas(proceedings_html, base_url, paper_wrapper_class):
+    """
+    Extracts paper links from AAMAS proceedings page.
+    """
+    soup = BeautifulSoup(proceedings_html, 'html.parser')
+    paper_details = []
+    
+    # Find all table rows that contain paper information
+    for row in soup.find_all('tr'):
+        # Skip rows without any content
+        if not row.text.strip():
+            continue
+            
+        # Find paper title and PDF link
+        title_link = row.find('a', href=lambda x: x and x.endswith('.pdf'))
+        if title_link:
+            title = title_link.get_text(strip=True)
+            pdf_url = urljoin(base_url, title_link['href'])
+            
+            # Get authors and affiliations from the same row
+            authors_cell = row.find_all('font', {'color': '#222222', 'size': '2', 'face': 'Times New Roman'})
+            authors_text = ' '.join([auth.get_text(strip=True) for auth in authors_cell]) if authors_cell else ''
+            
+            paper_details.append({
+                'title': title,
+                'url': pdf_url,
+                'authors': authors_text
+            })
+    
+    return paper_details
+
+def clean_title(title):
+    """Remove redundant _x000D_ and extra whitespace from titles"""
+    return re.sub(r'_x000D_', '', title).strip()
+
+def extract_abstract_from_pdf(pdf_url):
+    """Extract abstract from PDF paper"""
+    try:
+        response = requests.get(pdf_url, headers=HEADERS, timeout=30)
+        response.raise_for_status()
+        
+        pdf_file = io.BytesIO(response.content)
+        reader = PdfReader(pdf_file)
+        
+        # Usually abstract is in the first page
+        first_page = reader.pages[0].extract_text()
+        
+        # Try to find abstract section
+        abstract_match = re.search(r'Abstract\s*(.*?)(?=\b(?:Introduction|Keywords)\b)', 
+                                 first_page, re.DOTALL | re.IGNORECASE)
+        
+        if abstract_match:
+            abstract = abstract_match.group(1).strip()
+            # Clean up newlines and extra spaces
+            abstract = ' '.join(abstract.split())
+            return abstract
+        return "Abstract extraction failed"
+        
+    except Exception as e:
+        logging.error(f"Error extracting abstract from {pdf_url}: {e}")
+        return "Abstract extraction failed"
+    
+def extract_paper_details_aamas(paper_info, year):
+    """Creates paper details dictionary with abstract from PDF"""
+    details = {
+        'Title': clean_title(paper_info['title']),
+        'Abstract': extract_abstract_from_pdf(paper_info['url']),
+        'Year': year,
+        'Venue': "AAMAS",
+        'URL': paper_info['url'],
+        'Authors': paper_info['authors']
+    }
+    return details
+
 def paper_contains_keywords(title, abstract, keyword_groups):
     """
     Checks if at least one keyword from each sublist of keywords is present in the title or abstract.
@@ -221,6 +307,7 @@ def paper_contains_keywords(title, abstract, keyword_groups):
             return False
     return True
 
+# Modify the fetch_papers_for_year function to include AAMAS handling:
 def fetch_papers_for_year(venue_name, config, year):
     all_papers_for_year = []
     logging.info(f"Processing {config['venue_name']} {year}...")
@@ -229,12 +316,11 @@ def fetch_papers_for_year(venue_name, config, year):
     proceedings_url_template = config["proceedings_url_template"]
     paper_wrapper_class = config["paper_wrapper_class"]
     abstract_page_selector = config["abstract_page_selector"]
-    year_mapping = config["year_mapping"]
     venue_display_name = config["venue_name"]
 
     # Determine the proceedings URL based on the venue
     if venue_name == "PMLR":
-        volume = year_mapping.get(year)
+        volume = config["year_mapping"].get(year)
         if not volume:
             logging.warning(f"No volume mapping found for year {year}. Skipping.")
             return []
@@ -248,54 +334,47 @@ def fetch_papers_for_year(venue_name, config, year):
         logging.warning(f"Failed to fetch proceedings for {venue_display_name} {year}. Skipping.")
         return []
 
-    # Extract paper links based on venue
-    if venue_name == "IJCAI":
-        paper_links = extract_paper_links_ijcai(proceedings_html, base_url, paper_wrapper_class)
-    elif venue_name == "PMLR":
-        paper_links = extract_paper_links_pmlr(proceedings_html, base_url, paper_wrapper_class)
+    # Extract paper information based on venue
+    if venue_name == "AAMAS":
+        paper_details = extract_paper_links_aamas(proceedings_html, base_url, paper_wrapper_class)
+        
+        for paper_info in tqdm.tqdm(paper_details, desc=f"Processing AAMAS {year} papers"):
+            details = extract_paper_details_aamas(paper_info, year)
+            
+            title = details.get('Title', "")
+            abstract = details.get('Abstract', "")
+            authors = details.get('Authors', "")
+            
+            # Include authors in the keyword search to catch relevant papers
+            if paper_contains_keywords(f"{title} {authors}", abstract, 
+                                    [KEYWORDS_ADVERSARIAL_ML, KEYWORDS_RL, KEYWORDS_MULTI_AGENT]):
+                all_papers_for_year.append(details)
+                
+            time.sleep(REQUEST_DELAY)
     else:
-        logging.warning(f"Venue {venue_name} is not supported yet.")
-        return []
-
-    logging.info(f"Found {len(paper_links)} papers for {venue_display_name} {year}.")
-
-    relevant_papers_count = 0
-    for idx, paper_url in enumerate(tqdm.tqdm(paper_links, desc="Found papers: {}".format(len(paper_links))), 1):
-        # Extract paper details based on venue
+        # Existing handling for IJCAI and PMLR
         if venue_name == "IJCAI":
-            details = extract_paper_details_ijcai(paper_url, base_url, abstract_page_selector)
+            paper_links = extract_paper_links_ijcai(proceedings_html, base_url, paper_wrapper_class)
         elif venue_name == "PMLR":
-            details = extract_paper_details_pmlr(paper_url, base_url, abstract_page_selector)
-        else:
+            paper_links = extract_paper_links_pmlr(proceedings_html, base_url, paper_wrapper_class)
+            
+        for paper_url in tqdm.tqdm(paper_links, desc=f"Processing {venue_display_name} {year} papers"):
             details = None
+            if venue_name == "IJCAI":
+                details = extract_paper_details_ijcai(paper_url, base_url, abstract_page_selector)
+            elif venue_name == "PMLR":
+                details = extract_paper_details_pmlr(paper_url, base_url, abstract_page_selector)
+            
+            if details:
+                title = details.get('Title', "")
+                abstract = details.get('Abstract', "")
+                if paper_contains_keywords(title, abstract, [KEYWORDS_ADVERSARIAL_ML, KEYWORDS_RL, KEYWORDS_MULTI_AGENT]):
+                    all_papers_for_year.append(details)
+            time.sleep(REQUEST_DELAY)
 
-        if not details:
-            logging.warning(f"Failed to extract details for {paper_url}")
-            continue
-
-        title = details.get('Title', "")
-        abstract = details.get('Abstract', "")
-        year_extracted = details.get('Year', year)  # Fallback to loop year
-        url = paper_url
-
-        if paper_contains_keywords(title, abstract, [KEYWORDS_ADVERSARIAL_ML, KEYWORDS_RL, KEYWORDS_MULTI_AGENT]):
-            paper_entry = {
-                "Title": title,
-                "Year": year_extracted,
-                "Venue": details.get('Venue', venue_display_name),
-                "Abstract": abstract,
-                "URL": url
-            }
-            all_papers_for_year.append(paper_entry)
-            relevant_papers_count += 1
-
-        # Respect rate limiting
-        time.sleep(REQUEST_DELAY)
-
-    logging.info(f"Found {relevant_papers_count} relevant papers for {venue_display_name} {year}.")
-    # Additional delay after each year's proceedings
+    logging.info(f"Found {len(all_papers_for_year)} relevant papers for {venue_display_name} {year}.")
     time.sleep(REQUEST_DELAY * 10)
-
+    
     return all_papers_for_year
 
 
@@ -329,7 +408,7 @@ def main():
     df.drop_duplicates(subset=["Title", "Year", "Venue"], inplace=True)
 
     # Save to Excel
-    output_file = "results/venues_results.xlsx"
+    output_file = "./results/AAMAS_results.xlsx"
     df.to_excel(output_file, index=False)
     logging.info(f"Scraping completed. {len(df)} papers saved to {output_file}.")
 

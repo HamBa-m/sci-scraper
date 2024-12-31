@@ -2,9 +2,9 @@
 import pandas as pd
 
 # read classified papers from scholar
-scholar_papers = pd.read_excel("results/classified_scholar_papers.xlsx")
+scholar_papers = pd.read_excel("./results/classified_scholar_papers.xlsx")
 # read classified papers from venues
-venues_papers = pd.read_excel("results/classified_venues_papers.xlsx")
+venues_papers = pd.read_excel("./results/classified_venues_papers.xlsx")
 
 # merge the two dataframes
 merged_papers = pd.concat([scholar_papers, venues_papers], ignore_index=True)
@@ -55,7 +55,7 @@ merged_papers = merged_papers.drop_duplicates(subset=['Title'])
 merged_papers = merged_papers[['Title', 'Source', 'Year', 'Abstract', 'URL'] + [col for col in merged_papers.columns if col not in ['Title', 'Source', 'Year', 'Abstract', 'URL']]]
 
 # save the merged papers
-merged_papers.to_excel("results/merged_papers.xlsx", index=False)
+merged_papers.to_excel("results/mergejygukd_papers.xlsx", index=False)
 
 print("Merged papers saved successfully")
 print("Number of papers: ", len(merged_papers))

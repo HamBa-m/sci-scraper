@@ -8,31 +8,31 @@ class DataHandler:
         """Save results to an Excel file with specified filename."""
         df = pd.DataFrame(data)
         # check if results folder exists
-        if not os.path.exists('results'):
-            os.makedirs('results')
-        df.to_excel('results/{}'.format(filename), index=False)
+        if not os.path.exists('./results'):
+            os.makedirs('./results')
+        df.to_excel('./results/{}'.format(filename), index=False)
     
     def load_from_excel(self, filename):
         """Load data from an Excel file into a DataFrame."""
         # check if results folder exists
-        if not os.path.exists('results'):
-            os.makedirs('results')
-        return pd.read_excel('results/{}'.format(filename))
+        if not os.path.exists('./results'):
+            os.makedirs('./results')
+        return pd.read_excel('./results/{}'.format(filename))
 
     def save_to_json(self, data, filename):
         """Save results to a JSON file with specified filename."""
         # check if results folder exists
-        if not os.path.exists('results'):
-            os.makedirs('results')
-        with open('results/{}'.format(filename), 'w') as file:
+        if not os.path.exists('./results'):
+            os.makedirs('./results')
+        with open('./results/{}'.format(filename), 'w') as file:
             json.dump(data, file)
 
     def load_from_json(self, filename):
         """Load data from a JSON file."""
         # check if results folder exists
-        if not os.path.exists('results'):
-            os.makedirs('results')
-        with open('results/{}'.format(filename), 'r') as file:
+        if not os.path.exists('./results'):
+            os.makedirs('./results')
+        with open('./results/{}'.format(filename), 'r') as file:
             return json.load(file)
 
     # data_handler.py

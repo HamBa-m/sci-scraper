@@ -18,8 +18,8 @@ def prompt_model(prompt):
         raise SystemExit(err)
 
 # read the conference papers xlsx file
-# papers = pd.read_excel("results/venues_results.xlsx")
-papers = pd.read_csv("results/scholar_results.csv")
+# papers = pd.read_excel("./results/venues_results.xlsx")
+papers = pd.read_csv("./results/scholar_results.csv")
 
 # add a boolean column to the dataframe
 papers['is_relevent'] = None
@@ -47,7 +47,7 @@ for abs in tqdm.tqdm(abstracts, total=len(abstracts), desc="Prompting Phi model"
     time.sleep(0.5)
     
 # save the dataframe to a new xlsx file
-papers.to_excel("scholar_papers_with_adversarial_attacks_column.xlsx", index=False)
+papers.to_excel("./results/scholar_papers_with_adversarial_attacks_column.xlsx", index=False)
 
 # filter the dataframe to get only the relevant papers
 relevant_papers = papers[papers['is_relevent'] == 1]
@@ -55,4 +55,4 @@ print("Relevant papers shape:", relevant_papers.shape)
 
 # save the relevant papers to a new xlsx file
 # relevant_papers.to_excel("relevant_venues_papers.xlsx", index=False)
-relevant_papers.to_excel("relevant_scholar_papers.xlsx", index=False)
+relevant_papers.to_excel("./results/relevant_scholar_papers.xlsx", index=False)
