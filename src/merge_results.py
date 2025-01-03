@@ -5,9 +5,12 @@ import pandas as pd
 scholar_papers = pd.read_excel("./results/classified_scholar_papers.xlsx")
 # read classified papers from venues
 venues_papers = pd.read_excel("./results/classified_venues_papers.xlsx")
+# read classified papers from AAMAS
+aamas_papers = pd.read_excel("./results/classified_AAMAS_papers.xlsx")
 
 # merge the two dataframes
 merged_papers = pd.concat([scholar_papers, venues_papers], ignore_index=True)
+merged_papers = pd.concat([merged_papers, aamas_papers], ignore_index=True)
 
 # merge Abstract and abstract columns
 merged_papers['Abstract'] = merged_papers['Abstract'].combine_first(merged_papers['abstract'])

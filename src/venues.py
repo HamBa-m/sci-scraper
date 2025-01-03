@@ -14,34 +14,34 @@ import logging
 
 # Define the conferences with their specific scraping configurations
 VENUES = {
-    "IJCAI": {
-        "base_url": "https://www.ijcai.org",
-        "proceedings_url_template": "https://www.ijcai.org/proceedings/{year}/",
-        "paper_wrapper_class": "paper_wrapper",
-        "title_selector": "div.title",
-        "details_selector": "div.details a",
-        "abstract_page_selector": "div.abstract",
-        "venue_name": "IJCAI",
-        "year_mapping": None  # Years are directly in the URL
-    },
-    "PMLR": {
-        "base_url": "https://proceedings.mlr.press",
-        "proceedings_url_template": "https://proceedings.mlr.press/v{volume}/",
-        "paper_wrapper_class": "paper",
-        "title_selector": "p.title",
-        "details_selector": "p.links a[href*='abs']",
-        "abstract_page_selector": "div#abstract",
-        "venue_name": "PMLR",
-        "year_mapping": {
-            2018: 232,
-            2019: 233,
-            2020: 234,
-            2021: 235,
-            2022: 236,
-            2023: 237,
-            2024: 238
-        }
-    },
+    # "IJCAI": {
+    #     "base_url": "https://www.ijcai.org",
+    #     "proceedings_url_template": "https://www.ijcai.org/proceedings/{year}/",
+    #     "paper_wrapper_class": "paper_wrapper",
+    #     "title_selector": "div.title",
+    #     "details_selector": "div.details a",
+    #     "abstract_page_selector": "div.abstract",
+    #     "venue_name": "IJCAI",
+    #     "year_mapping": None  # Years are directly in the URL
+    # },
+    # "PMLR": {
+    #     "base_url": "https://proceedings.mlr.press",
+    #     "proceedings_url_template": "https://proceedings.mlr.press/v{volume}/",
+    #     "paper_wrapper_class": "paper",
+    #     "title_selector": "p.title",
+    #     "details_selector": "p.links a[href*='abs']",
+    #     "abstract_page_selector": "div#abstract",
+    #     "venue_name": "PMLR",
+    #     "year_mapping": {
+    #         2018: 232,
+    #         2019: 233,
+    #         2020: 234,
+    #         2021: 235,
+    #         2022: 236,
+    #         2023: 237,
+    #         2024: 238
+    #     }
+    # },
     "AAMAS": {
         "base_url": "https://www.ifaamas.org/Proceedings",
         "proceedings_url_template": "https://www.ifaamas.org/Proceedings/aamas{year}/forms/contents.htm",
@@ -72,6 +72,7 @@ KEYWORDS_RL = [
     "reinforcement",
     "drl",
     "rl",
+    "irl",
     "madrl",
     "marl"
 ]
@@ -79,9 +80,12 @@ KEYWORDS_RL = [
 # Keywords to filter papers related to Multi-Agent Reinforcement Learning
 KEYWORDS_MULTI_AGENT = [
     "multi-agent",
-    "agents",
     "madrl",
-    "marl"
+    "marl",
+    "mean field",
+    "mfg",
+    "mfgs",
+    "dec-mdp"
 ]
 
 # Years to scrape
@@ -223,7 +227,7 @@ def extract_paper_details_pmlr(paper_url, base_url, abstract_page_selector):
     return details
 
 # Add new extraction function for AAMAS papers:
-def extract_paper_links_aamas(proceedings_html, base_url, paper_wrapper_class):
+def extract_paper_links_aamas(proceedings_html, base_url):
     """
     Extracts paper links from AAMAS proceedings page.
     """
@@ -236,27 +240,23 @@ def extract_paper_links_aamas(proceedings_html, base_url, paper_wrapper_class):
         if not row.text.strip():
             continue
             
-        # Find paper title and PDF link
-        title_link = row.find('a', href=lambda x: x and x.endswith('.pdf'))
-        if title_link:
+        # Find all paper titles and PDF links within the row
+        for title_link in row.find_all('a', href=lambda x: x and x.endswith('.pdf')):
             title = title_link.get_text(strip=True)
             pdf_url = urljoin(base_url, title_link['href'])
             
-            # Get authors and affiliations from the same row
-            authors_cell = row.find_all('font', {'color': '#222222', 'size': '2', 'face': 'Times New Roman'})
-            authors_text = ' '.join([auth.get_text(strip=True) for auth in authors_cell]) if authors_cell else ''
-            
             paper_details.append({
                 'title': title,
-                'url': pdf_url,
-                'authors': authors_text
+                'url': pdf_url
             })
     
     return paper_details
 
 def clean_title(title):
-    """Remove redundant _x000D_ and extra whitespace from titles"""
-    return re.sub(r'_x000D_', '', title).strip()
+    """Remove redundant _x000D_, newline characters, and extra whitespace from titles"""
+    title = re.sub(r'_x000D_', '', title)
+    title = re.sub(r'\s+', ' ', title)  # Replace newline and multiple spaces with a single space
+    return title.strip()
 
 def extract_abstract_from_pdf(pdf_url):
     """Extract abstract from PDF paper"""
@@ -270,16 +270,21 @@ def extract_abstract_from_pdf(pdf_url):
         # Usually abstract is in the first page
         first_page = reader.pages[0].extract_text()
         
-        # Try to find abstract section
-        abstract_match = re.search(r'Abstract\s*(.*?)(?=\b(?:Introduction|Keywords)\b)', 
-                                 first_page, re.DOTALL | re.IGNORECASE)
-        
-        if abstract_match:
-            abstract = abstract_match.group(1).strip()
-            # Clean up newlines and extra spaces
-            abstract = ' '.join(abstract.split())
-            return abstract
-        return "Abstract extraction failed"
+        # Check if "Extended Abstract" is prominently present before main sections
+        if re.search(r'\bExtended Abstract\b', first_page, re.IGNORECASE):
+            return "Extended Abstract found. Skipping extraction."
+        else:
+            # Regex to extract the abstract if it's a normal paper
+            pattern = r'\bABSTRACT\b\s*(.*?)(?=\b(?:Introduction|1\s+INTRODUCTION|Keywords)\b)'
+            abstract_match = re.search(pattern, first_page, re.DOTALL | re.IGNORECASE)
+
+            if abstract_match:
+                abstract = abstract_match.group(1).strip()
+                # Clean up newlines and extra spaces
+                abstract = ' '.join(abstract.split())
+                return abstract
+            else:
+                return "Abstract extraction failed"
         
     except Exception as e:
         logging.error(f"Error extracting abstract from {pdf_url}: {e}")
@@ -292,8 +297,7 @@ def extract_paper_details_aamas(paper_info, year):
         'Abstract': extract_abstract_from_pdf(paper_info['url']),
         'Year': year,
         'Venue': "AAMAS",
-        'URL': paper_info['url'],
-        'Authors': paper_info['authors']
+        'URL': paper_info['url']
     }
     return details
 
@@ -336,19 +340,21 @@ def fetch_papers_for_year(venue_name, config, year):
 
     # Extract paper information based on venue
     if venue_name == "AAMAS":
-        paper_details = extract_paper_links_aamas(proceedings_html, base_url, paper_wrapper_class)
+        paper_details = extract_paper_links_aamas(proceedings_html, proceedings_url)
         
         for paper_info in tqdm.tqdm(paper_details, desc=f"Processing AAMAS {year} papers"):
             details = extract_paper_details_aamas(paper_info, year)
             
             title = details.get('Title', "")
             abstract = details.get('Abstract', "")
-            authors = details.get('Authors', "")
             
             # Include authors in the keyword search to catch relevant papers
-            if paper_contains_keywords(f"{title} {authors}", abstract, 
+            if paper_contains_keywords(title, abstract, 
                                     [KEYWORDS_ADVERSARIAL_ML, KEYWORDS_RL, KEYWORDS_MULTI_AGENT]):
                 all_papers_for_year.append(details)
+                logging.info(f"Found relevant paper: {title} | {year} | {details['URL']}")
+            else:
+                logging.info(f"Skipping non-relevant paper: {title}")
                 
             time.sleep(REQUEST_DELAY)
     else:

@@ -19,8 +19,8 @@ def prompt_model(prompt):
         raise SystemExit(err)
 
 # read the relevant papers xlsx file
-# papers = pd.read_excel("./results/relevant_conference_papers.xlsx")
-papers = pd.read_excel("./results/relevant_scholar_papers.xlsx")
+papers = pd.read_excel("./results/relevant_AAMAS_papers.xlsx")
+# papers = pd.read_excel("./results/relevant_scholar_papers.xlsx")
 
 # add the 12 columns to the dataframe
 classes = ['Attack', 'Defense', 'Robustness', 'Training', 'Testing', 'Competitive', 'Cooperative', 'AttackAgainstCommunication', 'BlackBox', 'WhiteBox', 'GreyBox', 'Comments']
@@ -28,8 +28,8 @@ for col in classes:
     papers[col] = None
 
 # get the list of abstracts
-# abstracts = papers['Abstract'].tolist()
-abstracts = papers['abstract'].tolist()
+abstracts = papers['Abstract'].tolist()
+# abstracts = papers['abstract'].tolist()
     
 # loop through the abstracts and prompt the model
 i = 0
@@ -89,5 +89,5 @@ for abs in tqdm.tqdm(abstracts, total=len(abstracts), desc="Prompting Phi model"
     time.sleep(0.5)
     
 # save the dataframe to a new xlsx file
-# papers.to_excel("./results/classified_conference_papers.xlsx", index=False)
-papers.to_excel("./results/classified_scholar_papers.xlsx", index=False)
+papers.to_excel("./results/classified_AAMAS_papers.xlsx", index=False)
+# papers.to_excel("./results/classified_scholar_papers.xlsx", index=False)

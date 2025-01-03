@@ -18,15 +18,15 @@ def prompt_model(prompt):
         raise SystemExit(err)
 
 # read the conference papers xlsx file
-# papers = pd.read_excel("./results/venues_results.xlsx")
-papers = pd.read_csv("./results/scholar_results.csv")
+papers = pd.read_excel("./results/AAMAS_results.xlsx")
+# papers = pd.read_csv("./results/scholar_results.csv")
 
 # add a boolean column to the dataframe
 papers['is_relevent'] = None
 
 # get the list of abstracts
-# abstracts = papers['Abstract'].tolist()
-abstracts = papers['abstract'].tolist()
+abstracts = papers['Abstract'].tolist()
+# abstracts = papers['abstract'].tolist()
     
 # loop through the abstracts and prompt the model
 i = 0
@@ -55,4 +55,4 @@ print("Relevant papers shape:", relevant_papers.shape)
 
 # save the relevant papers to a new xlsx file
 # relevant_papers.to_excel("relevant_venues_papers.xlsx", index=False)
-relevant_papers.to_excel("./results/relevant_scholar_papers.xlsx", index=False)
+relevant_papers.to_excel("./results/relevant_AAMAS_papers.xlsx", index=False)
