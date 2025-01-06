@@ -1,32 +1,72 @@
 # main.py
 import argparse
-import time
+import pandas as pd
+import logging
 
 from scholar import ScholarScraper
-from data_handler import DataHandler
+from venues import VenueScraper
 
-def main(query, num_pages):
-    # Initialize scrapers
-    scholar_scraper = ScholarScraper(query=query, num_pages=num_pages)
-    
-    # Scrape Google Scholar and save results
-    results = scholar_scraper.scrape()
-    data_handler = DataHandler()
-    
-    # Save results to Excel
-    data_handler.save_to_excel(results, "{}_results.xlsx".format(time.strftime("%Y%m%d-%H%M%S")))
-    print("\nResults have been saved to {}_results.xlsx".format(time.strftime("%Y%m%d-%H%M%S")))
-    
-    # Show summary statistics
-    data_handler.calculate_statistics(results)
+from llm_agent import AgentLLM
 
-test_query = '(adversarial OR attack OR attacks OR robust OR robustness OR defense OR defenses OR defensive OR corruption) AND ((("reinforcement learning" OR drl OR rl) AND ("multi-agent")) OR (madrl OR marl))'
-# test_query = 'multi-agent reinforcement learning adversarial attacks'
+# Configure logging to use UTF-8 encoding
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('log/main.log', encoding='utf-8')
+    ]
+)
 
-if __name__ == "__main__":
-    # parser = argparse.ArgumentParser(description="Scrape Google Scholar abstracts based on query.")
-    # parser.add_argument("query", type=str, help="The search query for Google Scholar", default=test_query)
-    # parser.add_argument("num_pages", type=int, help="The number of pages to scrape", default=50)
+def main():
+    parser = argparse.ArgumentParser(description='Scrape papers from Google Scholar and conferences')
+    parser.add_argument('--mode',
+                        help='Choose the scraping mode: scholar, venues, all',
+                        required=True,
+                        type=str,
+                        choices=['scholar', 'venues', 'all'],
+                        default='all')
+    parser.add_argument('--filter', help='Filter papers using LLM model', type=bool, nargs='?', const=True, default=False)
+    parser.add_argument('--classify', help='Classify papers using LLM model', type=bool, nargs='?', const=True, default=False)
+    args = parser.parse_args()
+
+    if args.mode == 'scholar':
+        scholar_scraper = ScholarScraper()
+        final_df = scholar_scraper.scrape()
+        
+    elif args.mode == 'venues':
+        venue_scraper = VenueScraper()
+        final_df = venue_scraper.scrape_venues()
+        
+    elif args.mode == 'all':
+        scholar_scraper = ScholarScraper()
+        scholar_df = scholar_scraper.scrape()
+        venue_scraper = VenueScraper()
+        venue_df = venue_scraper.scrape_venues()
+        
+        # merge scholar and venue dataframes
+        final_df = pd.concat([scholar_df, venue_df], ignore_index=True)
+        final_df.drop_duplicates(subset=["Title"], inplace=True)
+        output_file = "./results/all_results.xlsx"
+        final_df.to_excel(output_file, index=False)
+        logging.info(f"Scraping completed. {len(final_df)} papers saved to {output_file}.")
+        logging.info("All scraping tasks completed.")
     
-    # args = parser.parse_args()
-    main(query=test_query, num_pages=20)
+    else:
+        logging.error("Invalid mode. Please choose from 'scholar', 'venues', 'all'.")
+        return
+    
+    if args.filter:
+        llm_agent = AgentLLM()
+        filtered_df = llm_agent.filter_papers(final_df)
+        llm_agent.save_results(filtered_df)
+        logging.info("Filtering completed.")
+        if args.classify:
+            llm_agent.classify_papers(filtered_df)
+            logging.info("Classification completed.")
+    
+    if args.classify and not args.filter:
+        logging.error("Cannot classify papers without filtering them first. Please set the --filter flag to True.")
+        return
+        
+if __name__ == '__main__':
+    main()

@@ -1,0 +1,58 @@
+{
+    "AAMAS": {
+      "base_url": "https://www.ifaamas.org/Proceedings",
+      "proceedings_url_template": "https://www.ifaamas.org/Proceedings/aamas{year}/forms/contents.htm",
+      "paper_wrapper_class": "tr",
+      "title_selector": "a",
+      "details_selector": "td",
+      "abstract_page_selector": null,
+      "venue_name": "AAMAS",
+      "year_mapping": null
+    },
+    "IJCAI": {
+      "base_url": "https://www.ijcai.org",
+      "proceedings_url_template": "https://www.ijcai.org/proceedings/{year}/",
+      "paper_wrapper_class": "paper_wrapper",
+      "title_selector": "div.title",
+      "details_selector": "div.details a",
+      "abstract_page_selector": "div.abstract",
+      "venue_name": "IJCAI",
+      "year_mapping": null
+    },
+    "AISTATS": {
+      "base_url": "https://proceedings.mlr.press",
+      "proceedings_url_template": "https://proceedings.mlr.press/v{volume}/",
+      "paper_wrapper_class": "paper",
+      "title_selector": "p.title",
+      "details_selector": "p.links a[href*='abs']",
+      "abstract_page_selector": "div#abstract",
+      "venue_name": "AISTATS",
+      "year_mapping": {
+        "2018": 84,
+        "2019": 89,
+        "2020": 108,
+        "2021": 130,
+        "2022": 151,
+        "2023": 206,
+        "2024": 238
+      }
+    },
+    "ICML": {
+      "base_url": "https://proceedings.mlr.press",
+      "proceedings_url_template": "https://proceedings.mlr.press/v{volume}/",
+      "paper_wrapper_class": "paper",
+      "title_selector": "p.title",
+      "details_selector": "p.links a[href*='abs']",
+      "abstract_page_selector": "div#abstract",
+      "venue_name": "ICML",
+      "year_mapping": {
+        "2018": 80,
+        "2019": 97,
+        "2020": 119,
+        "2021": 139,
+        "2022": 162,
+        "2023": 202,
+        "2024": 235
+      }
+    }
+  }

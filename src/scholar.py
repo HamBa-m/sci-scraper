@@ -3,16 +3,30 @@ import requests
 import time
 from bs4 import BeautifulSoup
 from tqdm import tqdm
+import pandas as pd
+import logging
+import os
+import json
 
-from scrapers import (
+from scholar_scrapers import (
     IeeeScraper, SpringerScraper, MlrScraper, 
     NeuripsScraper, MdpiScraper, ScienceDirectScraper, ACMScraper,
     AAAIScraper, JAIRScraper, JMLRScraper, IJCAIScraper
 )
-from utils import detect_source
+from utils import detect_source, extract_year
 
+##### Load configuration
+current_dir = os.path.dirname(os.path.realpath(__file__))
+config_file = os.path.join(current_dir, 'config.json')
+with open(config_file, 'r') as f:
+    config = json.load(f)
+    
+NUM_PAGES = config['num_pages']
+SCHOLAR_QUERY = config['scholar_query']
+
+##### Main class
 class ScholarScraper:
-    def __init__(self, query, num_pages):
+    def __init__(self, query = SCHOLAR_QUERY, num_pages = NUM_PAGES):
         self.query = query
         self.num_pages = num_pages
         self.scrapers = {
@@ -34,6 +48,7 @@ class ScholarScraper:
         base_url = "https://scholar.google.com/scholar"
         results = []
         last_check = None  # for ScienceDirect rate-limiting
+        logging.info(f"=== Scraping Google Scholar for query: {self.query} ===")
         for page in tqdm(range(self.num_pages), desc='Pages processed', unit='page'):
             params = {'q': self.query, 'start': page * 10, 'hl': 'en'}
             response = requests.get(base_url, params=params)
@@ -59,18 +74,25 @@ class ScholarScraper:
                         abstract = scraper.get_abstract(link)
                         
                 paper_data = {
-                    'title': title,
-                    'link': link,
-                    'abstract': abstract,
-                    'citation': citation.text if citation else 'No citation',
-                    'source': source
+                    'Title': title,
+                    'URL': link,
+                    'Abstract': abstract,
+                    'Source': source,
+                    'Year': extract_year(citation.text) if citation else None
                 }
                 results.append(paper_data)
                 
-                # print(f"Processed article: {title[:50]}... | Source: {source} | Abstract found: {'Yes' if abstract else 'No'}")
+                logging.info(f"Processed article: {title[:50]}... | Source: {source} | Abstract found: {'Yes' if abstract else 'No'}")
                 
                 time.sleep(2)  # Delay to avoid blocking
                 # Update progress
                 if callback:
                     callback(page, self.num_pages, paper_data)
-        return results
+        
+        # convert to dataframe
+        df = pd.DataFrame(results, columns=['Title', 'URL', 'Abstract', 'Source', 'Year'])
+        # save to excel
+        output_file = "./results/scholar_results.xlsx"
+        df.to_excel(output_file, index=False)
+        logging.info(f"Scraping completed. {len(df)} papers saved to {output_file}.")
+        return df

@@ -1,6 +1,7 @@
 # utils.py
 from urllib.parse import urlparse
 from itertools import cycle
+import re
 
 # User agent list and cycling
 user_agent_list = [
@@ -79,3 +80,10 @@ def detect_source(url):
     }
     
     return sources.get(domain, domain)
+
+def extract_year(citation):
+    # Extract year from citation
+    year = re.search(r"\b(19|20)\d{2}\b", citation)
+    if year:
+        return year.group()
+    return None

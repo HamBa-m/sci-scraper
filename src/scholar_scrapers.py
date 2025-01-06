@@ -1,19 +1,19 @@
 # scrapers.py
 import requests
-from bs4 import BeautifulSoup, NavigableString
+from bs4 import BeautifulSoup
 import re
 import json
 import datetime as dt
 import time
 from typing import Optional
 from typing import Tuple
+import logging
 
 from utils import user_cycle
 
 class AbstractScraper:
     def get_abstract(self, url):
         raise NotImplementedError("Subclasses should implement this method!")
-
 
 class ArxivScraper(AbstractScraper):
     def get_abstract(self, url):
@@ -26,9 +26,8 @@ class ArxivScraper(AbstractScraper):
                 abstract = abstract_block.text.replace('Abstract:', '').strip()
                 return abstract
         except Exception as e:
-            print(f"Error fetching arXiv abstract: {e}")
+            logging.error(f"Error fetching arXiv abstract: {e}")
         return None
-
 
 class IeeeScraper(AbstractScraper):
     def get_abstract(self, url):
@@ -57,9 +56,8 @@ class IeeeScraper(AbstractScraper):
                 abstract = abstract_meta['content']
                 return abstract
         except Exception as e:
-            print(f"Error fetching IEEE abstract for article {url}: {e}")
+            logging.error(f"Error fetching IEEE abstract for article {url}: {e}")
         return None
-
 
 class SpringerScraper(AbstractScraper):
     def get_abstract(self, url):
@@ -84,9 +82,8 @@ class SpringerScraper(AbstractScraper):
             if abstract_p:
                 return abstract_p.get_text().strip()
         except Exception as e:
-            print(f"Error fetching Springer abstract: {e}")
+            logging.error(f"Error fetching Springer abstract: {e}")
         return None
-
 
 class MlrScraper(AbstractScraper):
     def get_abstract(self, url):
@@ -114,7 +111,7 @@ class MlrScraper(AbstractScraper):
                     if 'abstract' in p.get_text().lower()[:20]:
                         return p.get_text().strip()
         except Exception as e:
-            print(f"Error fetching MLR abstract: {e}")
+            logging.error(f"Error fetching MLR abstract: {e}")
         return None
 
 class NeuripsScraper(AbstractScraper):
@@ -156,7 +153,7 @@ class NeuripsScraper(AbstractScraper):
                     if next_elem and len(next_elem.get_text().strip()) > 100:
                         return next_elem.get_text().strip()
         except Exception as e:
-            print(f"Error fetching NeurIPS abstract: {e}")
+            logging.error(f"Error fetching NeurIPS abstract: {e}")
         return None
 
 class MdpiScraper(AbstractScraper):
@@ -193,7 +190,7 @@ class MdpiScraper(AbstractScraper):
                 except json.JSONDecodeError:
                     continue
         except Exception as e:
-            print(f"Error fetching MDPI abstract: {e}")
+            logging.error(f"Error fetching MDPI abstract: {e}")
         return None
 
 class ScienceDirectScraper(AbstractScraper):
@@ -275,7 +272,7 @@ class ScienceDirectScraper(AbstractScraper):
                         return text, last_check
 
         except Exception as e:
-            print(f"Error fetching ScienceDirect abstract: {e}")
+            logging.error(f"Error fetching ScienceDirect abstract: {e}")
             
         return None, last_check
 class AAAIScraper(AbstractScraper):
@@ -317,8 +314,9 @@ class AAAIScraper(AbstractScraper):
                 return meta_abstract['content']
 
         except Exception as e:
-            print(f"Error fetching AAAI abstract: {e}")
+            logging.error(f"Error fetching AAAI abstract: {e}")
         return None
+    
 class JMLRScraper(AbstractScraper):
     def get_abstract(self, url: str) -> Optional[str]:
         """Extract abstract from JMLR papers."""
@@ -349,7 +347,7 @@ class JMLRScraper(AbstractScraper):
                         return next_elem.get_text().strip()
 
         except Exception as e:
-            print(f"Error fetching JMLR abstract: {e}")
+            logging.error(f"Error fetching JMLR abstract: {e}")
         return None
 
 class JAIRScraper(AbstractScraper):
@@ -380,7 +378,7 @@ class JAIRScraper(AbstractScraper):
                 return meta_abstract['content']
 
         except Exception as e:
-            print(f"Error fetching JAIR abstract: {e}")
+            logging.error(f"Error fetching JAIR abstract: {e}")
         return None
 
 class ACMScraper(AbstractScraper):
@@ -420,7 +418,7 @@ class ACMScraper(AbstractScraper):
                 return meta_abstract['content']
 
         except Exception as e:
-            print(f"Error fetching ACM abstract: {e}")
+            logging.error(f"Error fetching ACM abstract: {e}")
         return None
 
 class IJCAIScraper(AbstractScraper):
@@ -460,5 +458,5 @@ class IJCAIScraper(AbstractScraper):
                 return meta_abstract['content']
 
         except Exception as e:
-            print(f"Error fetching IJCAI abstract: {e}")
+            logging.error(f"Error fetching IJCAI abstract: {e}")
         return None

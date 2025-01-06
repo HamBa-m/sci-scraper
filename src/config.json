@@ -1,0 +1,12 @@
+{
+    "start_year" : 2023,
+    "end_year" : 2023,
+    "request_delay" : 0.2,
+    "headers" : {
+        "User-Agent": "Mozilla/5.0 (compatible; DataScraper/1.0; +https://yourdomain.com/bot)"
+    },
+    "num_pages" : 1,
+    "scholar_query" : "(adversarial OR attack OR attacks OR robust OR robustness OR defense OR defenses OR defensive OR corruption) AND ((('reinforcement learning' OR drl OR rl) AND ('multi-agent')) OR (madrl OR marl))",
+    "api_key" : "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",
+    "model_url" : "microsoft/Phi-3-mini-4k-instruct"
+}
