@@ -164,9 +164,7 @@ class BaseScraper:
                     logging.info(f"Found relevant paper: {title} | {year} | {details.get('URL', '')}")
                 else:
                     logging.info(f"Skipping non-relevant paper: {title}")
-                
-            time.sleep(REQUEST_DELAY)
-            break
+            # break # for fast testing, remove this line to process all papers
 
         logging.info(f"Found {len(all_papers_for_year)} relevant papers for {self.venue_display_name} {year}.")
         time.sleep(REQUEST_DELAY * 10)
@@ -355,3 +353,152 @@ class ICMLScraper(BaseScraper):
         details['URL'] = paper_url
         
         return details
+
+class ICLRScraper(BaseScraper):
+    def __init__(self, venue_name, config):
+        super().__init__(venue_name, config)
+        self.batch_size = 1000  # Maximum number of papers to fetch per request
+        self.base_api_url = "https://dblp.uni-trier.de/search/publ/api"
+        self.max_retries = 3
+        self.base_delay = 0.5  # Base delay between requests in seconds
+
+    def fetch_with_retry(self, url, max_retries=3, initial_delay=5):
+        """Fetch URL with exponential backoff retry logic"""
+        for attempt in range(max_retries):
+            try:
+                response = requests.get(url, headers=HEADERS, timeout=10)
+                response.raise_for_status()
+                return response.text
+            except requests.exceptions.HTTPError as e:
+                if e.response.status_code == 429:  # Too Many Requests
+                    delay = initial_delay * (2 ** attempt)  # Exponential backoff
+                    logging.warning(f"Rate limited. Waiting {delay} seconds before retry...")
+                    time.sleep(delay)
+                    continue
+                raise
+            except Exception as e:
+                logging.error(f"Error fetching {url}: {e}")
+                raise
+
+    def construct_search_query(self, year):
+        """
+        Constructs an advanced search query using DBLP syntax.
+        Combines keywords and venue in the correct format.
+        """
+        # Keywords for initial filtering (using OR operator)
+        keywords = "Robust|Adversarial|Attack|Defense|Multi|agent|MARL|Game|Theory|Reinforcement|Learning"
+        
+        # Venue and year specification
+        venue_year = f"toc:db/conf/iclr/iclr{year}.bht:"
+        
+        # Combine them in the correct order
+        # Format: keyword venue_specification
+        query = f"{keywords} {venue_year}"
+        
+        return requests.utils.quote(query)
+
+    def extract_paper_links(self, proceedings_html, proceedings_url):
+        """
+        Fetches paper information from DBLP API for ICLR proceedings using advanced search query.
+        """
+        year = int(re.search(r'iclr(\d{4})', proceedings_url).group(1))
+        all_papers = []
+        total_fetched = 0
+        first_request = True
+        total_results = None
+        
+        # Get the query
+        query = self.construct_search_query(year)
+        
+        while True:
+            api_url = (f"{self.base_api_url}"
+                      f"?q={query}"
+                      f"&h={self.batch_size}&f={total_fetched}&format=json")
+            
+            logging.info(f"Fetching from API: {api_url}")
+            
+            try:
+                response = requests.get(api_url, headers=HEADERS, timeout=10)
+                response.raise_for_status()
+                data = response.json()
+                
+                hits = data['result']['hits']
+                
+                if first_request:
+                    total_results = int(hits['@total'])
+                    first_request = False
+                    logging.info(f"Total relevant papers found for ICLR {year}: {total_results}")
+
+                # Handle single result case
+                if '@total' in hits and int(hits['@total']) == 1:
+                    papers = [hits['hit']]
+                elif not hits['hit']:  # No results
+                    break
+                else:
+                    papers = hits['hit']
+                
+                for paper in papers:
+                    paper_info = paper['info']
+                    paper_details = {
+                        'title': paper_info['title'],
+                        'url': paper_info['ee'],
+                        'year': int(paper_info['year'])
+                    }
+                    all_papers.append(paper_details)
+                
+                papers_in_batch = len(papers)
+                total_fetched += papers_in_batch
+                
+                logging.info(f"Fetched {papers_in_batch} papers. Total fetched so far: {total_fetched}/{total_results}")
+                
+                if total_fetched >= total_results:
+                    logging.info(f"Successfully fetched all {total_fetched} papers for ICLR {year}")
+                    break
+                    
+                time.sleep(self.base_delay)
+                
+            except Exception as e:
+                logging.error(f"Error fetching DBLP API results for ICLR {year}: {e}")
+                break
+                
+        return all_papers
+
+    def extract_paper_details(self, paper_info, year):
+        """Extracts paper details including abstract from OpenReview with retry logic."""
+        try:
+            # Fetch the OpenReview page with retry logic
+            paper_html = self.fetch_with_retry(
+                paper_info['url'], 
+                max_retries=self.max_retries,
+                initial_delay=self.base_delay
+            )
+            
+            if not paper_html:
+                return None
+
+            soup = BeautifulSoup(paper_html, 'html.parser')
+            
+            details = {
+                'Title': self.clean_title(paper_info['title']),
+                'Year': year,
+                'Source': 'ICLR',
+                'URL': paper_info['url']
+            }
+            
+            # Extract abstract from the meta tag with name="citation_abstract"
+            abstract_meta = soup.find('meta', attrs={'name': 'citation_abstract'})
+            
+            if abstract_meta and 'content' in abstract_meta.attrs:
+                details['Abstract'] = abstract_meta['content'].strip()
+            else:
+                details['Abstract'] = "Abstract not found"
+            
+            # Add delay between requests to respect rate limits
+            time.sleep(self.base_delay)
+            
+            return details
+            
+        except Exception as e:
+            logging.error(f"Error extracting paper details from OpenReview {paper_info['url']}: {e}")
+            return None
+            

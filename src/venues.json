@@ -54,5 +54,12 @@
         "2023": 202,
         "2024": 235
       }
+    },
+    "ICLR": {
+        "base_url": "https://dblp.uni-trier.de",
+        "proceedings_url_template": "https://dblp.uni-trier.de/search/publ/api?q=toc%3Adb/conf/iclr/iclr{year}.bht%3A",
+        "paper_wrapper_class": "dummy-not-used",  
+        "abstract_page_selector": "dummy-not-used", 
+        "venue_name": "ICLR"
     }
   }

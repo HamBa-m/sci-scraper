@@ -20,16 +20,18 @@ logging.basicConfig(
 def main():
     parser = argparse.ArgumentParser(description='Scrape papers from Google Scholar and conferences')
     parser.add_argument('--mode',
-                        help='Choose the scraping mode: scholar, venues, all',
-                        required=True,
+                        help='Choose the scraping mode: scholar, venues, all, none',
                         type=str,
-                        choices=['scholar', 'venues', 'all'],
+                        choices=['scholar', 'venues', 'all', 'none'],
                         default='all')
     parser.add_argument('--filter', help='Filter papers using LLM model', type=bool, nargs='?', const=True, default=False)
     parser.add_argument('--classify', help='Classify papers using LLM model', type=bool, nargs='?', const=True, default=False)
     args = parser.parse_args()
 
-    if args.mode == 'scholar':
+    if args.mode == 'none':
+        logging.info("No scraping tasks selected. Exiting program.")
+        
+    elif args.mode == 'scholar':
         scholar_scraper = ScholarScraper()
         final_df = scholar_scraper.scrape()
         
@@ -57,6 +59,7 @@ def main():
     
     if args.filter:
         llm_agent = AgentLLM()
+        final_df = pd.read_excel("./results/all_results.xlsx")
         filtered_df = llm_agent.filter_papers(final_df)
         llm_agent.save_results(filtered_df)
         logging.info("Filtering completed.")

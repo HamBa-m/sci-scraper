@@ -1,7 +1,7 @@
 import logging
 import concurrent.futures
 import pandas as pd
-from venues_scrapers import AAMASScraper, IJCAIScraper, AISTATSScraper, ICMLScraper, START_YEAR, END_YEAR
+from venues_scrapers import AAMASScraper, IJCAIScraper, AISTATSScraper, ICMLScraper, ICLRScraper, START_YEAR, END_YEAR
 import json
 import os
 
@@ -31,6 +31,8 @@ class VenueScraper:
                     scraper = AISTATSScraper(venue_name, config)
                 elif venue_name == "ICML":
                     scraper = ICMLScraper(venue_name, config)
+                elif venue_name == "ICLR":
+                    scraper = ICLRScraper(venue_name, config)
                 else:
                     continue
 
@@ -48,7 +50,7 @@ class VenueScraper:
                     logging.error(f"Error occurred while processing {venue_name} {year}: {exc}")
 
         df = pd.DataFrame(all_papers)
-        df.drop_duplicates(subset=["Title", "Year", "Venue"], inplace=True)
+        df.drop_duplicates(subset=["Title", "Year", "Source"], inplace=True)
 
         output_file = "./results/venues_results.xlsx"
         df.to_excel(output_file, index=False)

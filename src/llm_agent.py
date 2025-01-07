@@ -26,7 +26,8 @@ class AgentLLM:
             raise SystemExit(err)
 
     def filter_papers(self, dataframe):
-        dataframe['is_relevent'] = 0
+        dataframe['is_relevent'] = pd.Series(dtype='int64')
+        dataframe['Verdict'] = pd.Series(dtype='str')
         abstracts = dataframe['Abstract'].tolist()
         for i, abs in tqdm.tqdm(enumerate(abstracts), total=len(abstracts), desc="Prompting Phi model"):
             title = dataframe.iloc[i]['Title']
@@ -37,22 +38,30 @@ class AgentLLM:
             <|user|>
                 Title: {0}
                 Abstract: {1}
-                Based on this abstract and title, does it discuss adversarial attacks and/or defenses on multi-agent deep reinforcement learning (MARL) algorithms? Ensure that the abstract specifically references a MARL algorithm. Answer "YES", "NO", or "I DON'T KNOW".
+                Based on this abstract and title, does it discuss adversarial attacks and/or defenses on multi-agent reinforcement learning (MARL) algorithms? Ensure that the abstract specifically references a MARL or Game Theory algorithm. Answer "YES", "NO", or "I DON'T KNOW". Make sure it is in the following format:
+                is_relevant: <YES | NO | I DON'T KNOW>
+                explanation: <brief explanation of your decision>
             <|end|>
             <|assistant|>
             '''.format(title, abstract)
+            
             response_text = self.prompt_model(prompt)
-            response_text = response_text.lower().replace(".", "").strip()
-
-            if response_text == "yes":
+            is_relevant = response_text.split('is_relevant: ')[1].split('explanation: ')[0].strip().lower()
+            verdict = response_text.split('explanation: ')[1].strip()
+            
+            if is_relevant == "yes":
                 dataframe.loc[i, 'is_relevent'] = 1
+            else:
+                dataframe.loc[i, 'is_relevent'] = 0
+            
+            dataframe.loc[i, 'Verdict'] = verdict
                 
-            logging.info(f"Processed paper {title} with response: {response_text}")
+            logging.info(f"Processed paper {title} with response: {is_relevant}, and explanation: {verdict}")
             
             time.sleep(0.5)
-        # drop the rows that are not relevant
-        dataframe = dataframe[dataframe['is_relevent'] == 1]
-        dataframe.drop(columns=['is_relevent'], inplace=True)
+        # # drop the rows that are not relevant
+        # dataframe = dataframe[dataframe['is_relevent'] == 1]
+        # dataframe.drop(columns=['is_relevent'], inplace=True)
         
         return dataframe
 

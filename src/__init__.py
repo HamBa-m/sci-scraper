@@ -9,7 +9,7 @@ from .scholar_scrapers import (
 )
 
 from .venues_scrapers import (
-    AAMASScraper, AISTATSScraper, ICMLScraper, IJCAIScraper
+    AAMASScraper, AISTATSScraper, ICMLScraper, IJCAIScraper, ICLRScraper
 )
 
 from .utils import user_cycle, detect_source, extract_year

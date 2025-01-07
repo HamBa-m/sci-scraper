@@ -19,7 +19,8 @@
         "perturbation",
         "malicious agent",
         "malicious agents",
-        "adversarial intent"
+        "adversarial intent",
+        "byzantine"
     ],
     "marl": [
         "multi-agent reinforcement learning",
@@ -43,6 +44,7 @@
         "mfg",
         "mfgs",
         "game theory",
+        "Game-Theoretic",
         "stochastic game",
         "zero-sum"
     ],

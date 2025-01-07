@@ -9,7 +9,7 @@ import os
 import json
 
 from scholar_scrapers import (
-    IeeeScraper, SpringerScraper, MlrScraper, 
+    IeeeScraper, SpringerScraper, MlrScraper, ArxivScraper,
     NeuripsScraper, MdpiScraper, ScienceDirectScraper, ACMScraper,
     AAAIScraper, JAIRScraper, JMLRScraper, IJCAIScraper
 )
@@ -41,7 +41,8 @@ class ScholarScraper:
             'AAAI': AAAIScraper(),
             'JAIR': JAIRScraper(),
             'JMLR': JMLRScraper(),
-            'IJCAI': IJCAIScraper()
+            'IJCAI': IJCAIScraper(),
+            'arXiv': ArxivScraper()
         }
 
     def scrape(self, callback=None):
@@ -49,7 +50,7 @@ class ScholarScraper:
         results = []
         last_check = None  # for ScienceDirect rate-limiting
         logging.info(f"=== Scraping Google Scholar for query: {self.query} ===")
-        for page in tqdm(range(self.num_pages), desc='Pages processed', unit='page'):
+        for page in tqdm(range(self.num_pages), desc='Scholar pages processed', unit='page'):
             params = {'q': self.query, 'start': page * 10, 'hl': 'en'}
             response = requests.get(base_url, params=params)
             soup = BeautifulSoup(response.text, 'html.parser')
@@ -63,8 +64,8 @@ class ScholarScraper:
                 
                 # Detect the source and retrieve abstract
                 source = detect_source(link)
-                if source == 'arXiv':
-                    continue # Skip arXiv papers
+                # if source == 'arXiv':
+                #     continue # Skip arXiv papers
                 abstract = None
                 if source in self.scrapers:
                     scraper = self.scrapers[source]
