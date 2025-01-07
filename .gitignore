@@ -2,7 +2,7 @@
 __pycache__
 
 # ignore results folder
-results
+# results
 
 # misc
 venues_copy.py
