@@ -4,8 +4,8 @@ __pycache__
 # ignore results folder
 # results
 
-# misc
-venues_copy.py
+# ignore papers, but not the folder itself
+papers/*
 
-# log
+# log files, but not the folder itself
 log/*
