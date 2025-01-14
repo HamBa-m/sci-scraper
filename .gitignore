@@ -9,3 +9,5 @@ papers/*
 
 # log files, but not the folder itself
 log/*
+
+notebooks/GuidedLDA
