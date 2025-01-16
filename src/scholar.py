@@ -30,7 +30,6 @@ class ScholarScraper:
         self.query = query
         self.num_pages = num_pages
         self.scrapers = {
-            # 'arXiv': ArxivScraper(),
             'IEEE': IeeeScraper(),
             'Springer': SpringerScraper(),
             'MLR': MlrScraper(),
