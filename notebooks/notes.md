@@ -45,14 +45,13 @@ This document summarizes key ideas and observations from a review of Multi-Agent
 2. Should papers using IQL (despite its simplicity) be included in the survey?
 
 ## Sections
+- Background
 - Related Work (surveys) : must stress on what is different in our survey relatively to the existent ones, also to justify the survey itself
 - Methodology (selection, classification, time-window etc.)
-- Background
 - Classes (paper presentation and critical analysis):
-   - contributions
-   - comparison
-   - limitations and challenges
-- Environments (?)
+   - we will use the classification vector diagram sections as sections titles (i.e. 4 sections)
+   - contributions, limitations and challenges
+- Environments
 - Future directions
 - Conclusion
 
