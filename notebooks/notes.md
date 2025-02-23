@@ -60,3 +60,7 @@ This document summarizes key ideas and observations from a review of Multi-Agent
 [+] we may need a criteria of comparison between papers inside every section (preferably shared, but not necessarily)
 
 [+] ACM Surveys / AI Reviews: survey length should stay around the average length of these surveys
+
+---
+## Questions
+- what metrics / technics are used for evaluation ?
