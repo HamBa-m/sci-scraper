@@ -8,12 +8,12 @@ import logging
 import os
 import json
 
-from scholar_scrapers import (
+from .scholar_scrapers import (
     IeeeScraper, SpringerScraper, MlrScraper, ArxivScraper,
     NeuripsScraper, MdpiScraper, ScienceDirectScraper, ACMScraper,
     AAAIScraper, JAIRScraper, JMLRScraper, IJCAIScraper
 )
-from utils import detect_source, extract_year
+from .utils import detect_source, extract_year
 
 ##### Load configuration
 current_dir = os.path.dirname(os.path.realpath(__file__))

@@ -1,7 +1,7 @@
 import logging
 import concurrent.futures
 import pandas as pd
-from venues_scrapers import AAMASScraper, IJCAIScraper, AISTATSScraper, ICMLScraper, ICLRScraper, START_YEAR, END_YEAR
+from .venues_scrapers import AAMASScraper, IJCAIScraper, AISTATSScraper, ICMLScraper, ICLRScraper, START_YEAR, END_YEAR
 import json
 import os
 

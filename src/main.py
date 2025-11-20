@@ -25,7 +25,6 @@ def main():
                         choices=['scholar', 'venues', 'all', 'none'],
                         default='all')
     parser.add_argument('--filter', help='Filter papers using LLM model', type=bool, nargs='?', const=True, default=False)
-    parser.add_argument('--classify', help='Classify papers using LLM model', type=bool, nargs='?', const=True, default=False)
     args = parser.parse_args()
 
     if args.mode == 'none':
@@ -55,7 +54,6 @@ def main():
     
     else:
         logging.error("Invalid mode. Please choose from 'scholar', 'venues', 'all'.")
-        return
     
     if args.filter:
         llm_agent = AgentLLM()
@@ -63,13 +61,8 @@ def main():
         filtered_df = llm_agent.filter_papers(final_df)
         llm_agent.save_results(filtered_df)
         logging.info("Filtering completed.")
-        if args.classify:
-            llm_agent.classify_papers(filtered_df)
-            logging.info("Classification completed.")
-    
-    if args.classify and not args.filter:
-        logging.error("Cannot classify papers without filtering them first. Please set the --filter flag to True.")
-        return
         
+    return
+
 if __name__ == '__main__':
     main()

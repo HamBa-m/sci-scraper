@@ -9,7 +9,7 @@ from typing import Optional
 from typing import Tuple
 import logging
 
-from utils import user_cycle
+from .utils import user_cycle
 
 class AbstractScraper:
     def get_abstract(self, url):

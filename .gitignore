@@ -11,3 +11,19 @@ papers/*
 log/*
 
 notebooks/GuidedLDA
+
+# api keys and secrets
+src/config.json
+
+# vs code settings
+.vscode/
+
+# cache files
+.cache/
+.ipynb_checkpoints
+.DS_Store
+*.pyc
+__pycache__/
+
+# log
+log/

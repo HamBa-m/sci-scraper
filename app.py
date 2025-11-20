@@ -1,6 +1,6 @@
 # app.py
 from flask import Flask, render_template, request, redirect, url_for, flash, Response
-from scholar import ScholarScraper
+from src.scholar import ScholarScraper
 from data_handler import DataHandler
 import time
 import json
