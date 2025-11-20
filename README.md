@@ -126,6 +126,11 @@ Respect site terms, robots.txt, and laws. Use delays to avoid overload. Not for 
 - Lexical filters may need semantic post-processing.
 - No full-text PDF downloads (metadata only).
 
+## Future Work
+- Add more publishers/venues.
+- GUI for easier use. (ongoing, see ```app.py``` and ```templates/``` / ```static/``` folders)
+- Control over the logic of keyword combinations.
+
 ## Contributing
 
 Pull requests welcome! For major changes, open an issue first. Focus on:
