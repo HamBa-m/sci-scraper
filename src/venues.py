@@ -5,11 +5,12 @@ from .venues_scrapers import AAMASScraper, IJCAIScraper, AISTATSScraper, ICMLScr
 import json
 import os
 
-# Load venue configurations from JSON file
-current_dir = os.path.dirname(__file__)
-venues_file = os.path.join(current_dir, 'venues.json')
-with open(venues_file, 'r') as f:
-    VENUES = json.load(f)
+try:
+    from .config import get_venues, RESULTS_DIR
+except (ImportError, ValueError):
+    from config import get_venues, RESULTS_DIR
+
+VENUES = get_venues()
 
 class VenueScraper:
     def __init__(self, venues = VENUES):
@@ -52,7 +53,7 @@ class VenueScraper:
         df = pd.DataFrame(all_papers)
         df.drop_duplicates(subset=["Title", "Year", "Source"], inplace=True)
 
-        output_file = "./results/venues_results.xlsx"
+        output_file = str(RESULTS_DIR / "venues_results.xlsx")
         df.to_excel(output_file, index=False)
         logging.info(f"Scraping completed. {len(df)} papers saved to {output_file}.")
         return df

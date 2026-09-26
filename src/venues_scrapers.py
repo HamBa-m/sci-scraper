@@ -12,12 +12,12 @@ import os
 
 # -------------------- Configuration -------------------- #
 
-# Import keywords from a separate JSON file
-current_dir = os.path.dirname(os.path.realpath(__file__))
-keywords_file = os.path.join(current_dir, 'keywords.json')
-with open(keywords_file, 'r') as f:
-    KEYWORDS = json.load(f)
+try:
+    from .config import get_keywords, get_config
+except (ImportError, ValueError):
+    from config import get_keywords, get_config
 
+KEYWORDS = get_keywords()
 KEYWORDS_ADVERSARIAL = KEYWORDS["adversarial"]
 KEYWORDS_RL = KEYWORDS["rl"]
 KEYWORDS_MULTI_AGENT = KEYWORDS["multi_agent"]
@@ -25,10 +25,7 @@ KEYWORDS_MARL = KEYWORDS["marl"]
 KEYWORDS_GAME_THEORY = KEYWORDS["game_theory"]
 
 # Other configurations
-config_file = os.path.join(current_dir, 'config.json')
-with open(config_file, 'r') as f:
-    config = json.load(f)
-    
+config = get_config()
 START_YEAR = config["start_year"]
 END_YEAR = config["end_year"]
 HEADERS = config["headers"]
