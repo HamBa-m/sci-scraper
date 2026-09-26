@@ -42,31 +42,46 @@ class DataHandler:
     # data_handler.py
     def calculate_statistics(self, data):
         """Calculate and return summary statistics as a string for display."""
-        df = pd.DataFrame(data)
+        if isinstance(data, pd.DataFrame):
+            df = data.copy()
+        else:
+            df = pd.DataFrame(data)
+
+        # Normalize column names to lowercase to handle both production Title/Abstract/Source and title/abstract/source
+        df = df.rename(columns={col: str(col).lower() for col in df.columns})
+
         output = []
-        
         total_papers = len(df)
-        papers_with_abstracts = df['abstract'].notna().sum()
-        abstract_success_rate = (papers_with_abstracts / total_papers * 100) if total_papers > 0 else 0
-        output.append(f"\nOverall Summary:")
+        abstract_series = df['abstract'] if 'abstract' in df.columns else pd.Series([None] * total_papers)
+        papers_with_abstracts = int(abstract_series.notna().sum())
+        abstract_success_rate = (papers_with_abstracts / total_papers * 100) if total_papers > 0 else 0.0
+
+        output.append("\nOverall Summary:")
         output.append(f"Total papers found: {total_papers}")
         output.append(f"Total papers with abstracts: {papers_with_abstracts}")
         output.append(f"Overall abstract success rate: {abstract_success_rate:.1f}%\n")
-        
-        source_stats = df.groupby('source').agg({
-            'abstract': lambda x: x.notna().sum(),
-            'title': 'count'
-        }).reset_index()
-        source_stats.columns = ['Source', 'Papers with Abstract', 'Total Papers']
-        source_stats['Success Rate (%)'] = (source_stats['Papers with Abstract'] / source_stats['Total Papers'] * 100).round(1)
-        source_stats = source_stats.sort_values('Total Papers', ascending=False)
-        output.append("\nBreakdown by Source:")
-        output.append(source_stats.to_string(index=False))
 
-        other_sources = df[df['source'].str.contains('Other', na=False)]['source'].unique()
-        output.append("\nUnique Sources in 'Other' Category:")
-        for source in sorted(other_sources):
-            count = len(df[df['source'] == source])
-            output.append(f"- {source}: {count} papers")
-        
+        if 'source' in df.columns and total_papers > 0:
+            df['source'] = df['source'].fillna('Unknown')
+            if 'abstract' not in df.columns:
+                df['abstract'] = None
+            if 'title' not in df.columns:
+                df['title'] = range(len(df))
+
+            source_stats = df.groupby('source').agg({
+                'abstract': lambda x: x.notna().sum(),
+                'title': 'count'
+            }).reset_index()
+            source_stats.columns = ['Source', 'Papers with Abstract', 'Total Papers']
+            source_stats['Success Rate (%)'] = (source_stats['Papers with Abstract'] / source_stats['Total Papers'] * 100).round(1)
+            source_stats = source_stats.sort_values('Total Papers', ascending=False)
+            output.append("\nBreakdown by Source:")
+            output.append(source_stats.to_string(index=False))
+
+            other_sources = df[df['source'].astype(str).str.contains('Other', na=False)]['source'].unique()
+            output.append("\nUnique Sources in 'Other' Category:")
+            for source in sorted(other_sources):
+                count = len(df[df['source'] == source])
+                output.append(f"- {source}: {count} papers")
+
         return "\n".join(output)

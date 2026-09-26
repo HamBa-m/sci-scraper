@@ -31,3 +31,23 @@ def test_web_static_assets_exist():
     assert css_file.exists()
     assert js_file.exists()
     assert template_file.exists()
+
+def test_web_production_data_statistics_parsing():
+    """Verify that production ScholarScraper output (capitalized columns) parses through web stats without KeyError."""
+    import pandas as pd
+    from web.app import parse_stats_text
+    from src.data_handler import DataHandler
+
+    handler = DataHandler()
+    prod_results = pd.DataFrame([
+        {"Title": "Adversarial MARL", "URL": "https://example.com/1", "Abstract": "Paper abstract", "Source": "IEEE", "Year": 2024},
+        {"Title": "Dec-POMDP Robustness", "URL": "https://example.com/2", "Abstract": None, "Source": "ACM", "Year": 2023},
+    ])
+    stats_text = handler.calculate_statistics(prod_results)
+    stats_data = parse_stats_text(stats_text)
+
+    assert stats_data["total_papers"] == 2
+    assert stats_data["papers_with_abstracts"] == 1
+    assert stats_data["abstract_success_rate"] == 50.0
+    assert len(stats_data["source_stats"]) == 2
+
