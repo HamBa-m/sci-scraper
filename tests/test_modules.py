@@ -23,6 +23,21 @@ def test_data_handler_init_and_stats():
     assert "Total papers with abstracts: 1" in stats
     assert "50.0%" in stats
 
+def test_data_handler_production_schema():
+    """Verify calculate_statistics accepts production ScholarScraper DataFrame output with Title/Abstract/Source/Year/URL."""
+    handler = DataHandler()
+    prod_df = pd.DataFrame([
+        {"Title": "Paper 1", "URL": "https://ieee.org/1", "Abstract": "Real abstract", "Source": "IEEE", "Year": 2023},
+        {"Title": "Paper 2", "URL": "https://acm.org/2", "Abstract": None, "Source": "ACM", "Year": 2024},
+        {"Title": "Paper 3", "URL": "https://other.org/3", "Abstract": "Another abstract", "Source": "Other (arXiv)", "Year": 2022},
+    ])
+    stats = handler.calculate_statistics(prod_df)
+    assert "Total papers found: 3" in stats
+    assert "Total papers with abstracts: 2" in stats
+    assert "66.7%" in stats
+    assert "IEEE" in stats
+    assert "Other (arXiv)" in stats
+
 def test_config_subfolder_migration():
     config_dir = SRC_DIR / "config"
     assert config_dir.is_dir()

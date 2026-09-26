@@ -35,7 +35,7 @@ pip install -r requirements.txt
 pip install -r requirements-analysis.txt
 ```
 
-### Basic Usage
+### Basic Usage (CLI)
 
 Run the tool from the repository root using command-line arguments:
 
@@ -74,14 +74,25 @@ python main.py --mode [scholar|venues|all|none] [--filter]
 
 Logs are saved to `log/main.log`. Output datasets are saved in `./results/`.
 
+### Interactive Web Interface
+
+An interactive Flask-based web dashboard is available for configuring queries, monitoring live scraping progress, and inspecting corpus statistics:
+
+```bash
+python web/app.py
+```
+
+Once launched, navigate to `http://127.0.0.1:5000` in your web browser.
+
 ### Python API Example
 
-For advanced usage or custom workflows, import the classes directly:
+For programmatic integration or custom research workflows, import the modules directly from `src`:
 
 ```python
-from scholar import ScholarScraper
-from venues import VenueScraper
-from llm_agent import AgentLLM
+from src.scholar import ScholarScraper
+from src.venues import VenueScraper
+from src.llm_agent import AgentLLM
+from src.config import RESULTS_DIR
 import pandas as pd
 
 # 1. Custom scraping
@@ -93,12 +104,50 @@ df_venue = venue.scrape_venues()
 
 # 2. Merge and deduplicate by title
 merged_df = pd.concat([df_scholar, df_venue]).drop_duplicates(subset=["Title"])
-merged_df.to_excel("../results/custom_results.xlsx", index=False)
+merged_df.to_excel(RESULTS_DIR / "custom_results.xlsx", index=False)
 
 # 3. Semantic filtering via LLM
 agent = AgentLLM()
 filtered = agent.filter_papers(merged_df)
 agent.save_results(filtered)
+```
+
+### Running Automated Tests
+
+A comprehensive test suite of automated regression and smoke tests is provided in `tests/`:
+
+```bash
+python -m pytest
+```
+
+### Repository Structure
+
+```text
+sci-scraper/
+├── main.py                   # Root CLI entrypoint (multi-mode scraper & filter)
+├── requirements.txt          # Core scraping & filtering dependencies
+├── requirements-analysis.txt # Dependencies for notebooks (EDA, BERTopic)
+├── pytest.ini                # Pytest configuration
+├── src/                      # Core scraping & filtering library
+│   ├── config/               # JSON configurations (config, keywords, venues)
+│   ├── config.py             # Centralized path anchoring (PROJECT_ROOT)
+│   ├── data_handler.py       # Data cleaning, deduplication, and persistence
+│   ├── scholar.py            # Google Scholar scraping coordinator
+│   ├── scholar_scrapers.py   # 12 publisher-specific extractors
+│   ├── venues.py             # Venue scraping coordinator & parallel runner
+│   ├── venues_scrapers.py    # Venue-specific extractors
+│   ├── llm_agent.py          # LLM-based semantic filter (Hugging Face Hub)
+│   └── utils.py              # User-agent rotation and polite delay helpers
+├── web/                      # Web UI application
+│   ├── app.py                # Flask application server
+│   ├── templates/            # Jinja2 HTML templates
+│   └── static/               # CSS stylesheets & JavaScript assets
+├── notebooks/                # Analysis & topic modeling replication
+│   ├── eda.ipynb             # Exploratory Data Analysis
+│   ├── bertopic.ipynb        # Neural topic modeling (BERTopic)
+│   └── README.md             # Replication guide for survey figures
+├── tests/                    # Automated smoke & regression test suite
+└── results/                  # Scraped datasets and survey corpora
 ```
 
 ---
@@ -262,7 +311,7 @@ We made sure to handle the scraping limitations imposed by the publishers, such 
 
 Using keyword bags containing numerous relevant words to the targeted field, `sci-scraper` builds a logical combination that helps selecting the most likely papers to be relevant to the AOI through query combinations.
 
-Defaults in `src/keywords.json` are structured into 5 bags:
+Defaults in `src/config/keywords.json` are structured into 5 bags:
 - **`adversarial` (21 keywords):** *adversarial, attack, attacks, robust, robustness, defense, defenses, defensive, corruption, evasion, backdoor, poisoning, injection, black-box, white-box, gray-box, perturbation, malicious agent, malicious agents, adversarial intent, byzantine.*
 - **`marl` (13 keywords):** *multi-agent reinforcement learning, multi-agent rl, multi-agent deep reinforcement learning, multi-agent drl, cooperative multi-agent reinforcement learning, madrl, marl, cmarl, c-marl, pomdp, dec-mdp, maddpg, mappo, masac.*
 - **`game_theory` (8 keywords):** *mean field, mean-field, mfg, mfgs, game theory, Game-Theoretic, stochastic game, zero-sum.*

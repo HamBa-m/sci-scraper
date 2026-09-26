@@ -30,3 +30,5 @@ def test_notebooks_readme_exists():
     assert "papers_content.csv" in content
     assert "papers_topics.csv" in content
     assert "requirements-analysis.txt" in content
+    assert "filtered_papers.xlsx" in content
+
