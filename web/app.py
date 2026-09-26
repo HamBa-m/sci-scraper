@@ -1,13 +1,22 @@
-# app.py
+# web/app.py
+import sys
+from pathlib import Path
 from flask import Flask, render_template, request, redirect, url_for, flash, Response
+
+# Ensure project root is in sys.path
+ROOT_DIR = Path(__file__).resolve().parent.parent
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
 from src.scholar import ScholarScraper
-from data_handler import DataHandler
+from src.data_handler import DataHandler
+from src.config import RESULTS_DIR
 import time
 import json
 
 app = Flask(__name__)
 app.secret_key = 'your_secure_secret_key'
-data_handler = DataHandler()
+data_handler = DataHandler(results_dir=RESULTS_DIR)
 progress = 0
 processed_papers = []
 
@@ -135,8 +144,9 @@ def progress_stream():
 @app.route('/download')
 def download_results():
     try:
+        file_path = str(RESULTS_DIR / 'scholar_results.xlsx')
         return send_file(
-            'scholar_results.xlsx',
+            file_path,
             as_attachment=True,
             download_name='scholar_results.xlsx',
             mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
