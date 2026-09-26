@@ -51,16 +51,21 @@ def run_pipeline(mode: str = 'all', filter_papers: bool = False):
         logging.info(f"Scraping completed. {len(final_df)} unique papers saved to {output_file}.")
 
     if filter_papers:
-        input_file = RESULTS_DIR / "all_results.xlsx"
-        if not input_file.exists():
-            error_msg = f"Cannot filter: {input_file} does not exist. Run with --mode all first."
-            logging.error(error_msg)
-            print(f"Error: {error_msg}", file=sys.stderr)
-            return 1
-        
-        logging.info(f"Starting LLM semantic filtering on {input_file}...")
+        if final_df is not None:
+            logging.info(f"Filtering {len(final_df)} freshly scraped papers from mode '{mode}' using LLM model...")
+            papers_df = final_df
+        else:
+            input_file = RESULTS_DIR / "all_results.xlsx"
+            if not input_file.exists():
+                error_msg = f"Cannot filter: {input_file} does not exist. Run with --mode all first, or scrape before filtering."
+                logging.error(error_msg)
+                print(f"Error: {error_msg}", file=sys.stderr)
+                return 1
+            
+            logging.info(f"Starting LLM semantic filtering on {input_file}...")
+            papers_df = pd.read_excel(str(input_file))
+            
         llm_agent = AgentLLM()
-        papers_df = pd.read_excel(str(input_file))
         filtered_df = llm_agent.filter_papers(papers_df)
         llm_agent.save_results(filtered_df)
         logging.info("LLM semantic filtering completed.")
