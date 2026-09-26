@@ -27,3 +27,6 @@ __pycache__/
 
 # log
 log/
+
+# review_docs
+.review/
