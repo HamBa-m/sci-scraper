@@ -34,3 +34,16 @@ def test_cli_invalid_mode():
     )
     assert result.returncode != 0
     assert "invalid choice" in result.stderr or "error" in result.stderr
+
+def test_src_main_shim_help():
+    """Verify that legacy python src/main.py --help executes without relative import errors."""
+    result = subprocess.run(
+        [sys.executable, str(PROJECT_ROOT / "src" / "main.py"), "--help"],
+        capture_output=True,
+        text=True,
+        cwd=str(PROJECT_ROOT)
+    )
+    assert result.returncode == 0
+    assert "--mode" in result.stdout
+    assert "--filter" in result.stdout
+
