@@ -2,37 +2,41 @@
 import pandas as pd
 import json
 import os
+from pathlib import Path
+
+try:
+    from .config import RESULTS_DIR
+except (ImportError, ValueError):
+    from config import RESULTS_DIR
 
 class DataHandler:
+    def __init__(self, results_dir=None):
+        self.results_dir = Path(results_dir) if results_dir else RESULTS_DIR
+        self.results_dir.mkdir(parents=True, exist_ok=True)
+
     def save_to_excel(self, data, filename):
         """Save results to an Excel file with specified filename."""
         df = pd.DataFrame(data)
-        # check if results folder exists
-        if not os.path.exists('results'):
-            os.makedirs('results')
-        df.to_excel('results/{}'.format(filename), index=False)
+        file_path = self.results_dir / filename
+        df.to_excel(str(file_path), index=False)
+        return file_path
     
     def load_from_excel(self, filename):
         """Load data from an Excel file into a DataFrame."""
-        # check if results folder exists
-        if not os.path.exists('results'):
-            os.makedirs('results')
-        return pd.read_excel('results/{}'.format(filename))
+        file_path = self.results_dir / filename
+        return pd.read_excel(str(file_path))
 
     def save_to_json(self, data, filename):
         """Save results to a JSON file with specified filename."""
-        # check if results folder exists
-        if not os.path.exists('results'):
-            os.makedirs('results')
-        with open('results/{}'.format(filename), 'w') as file:
+        file_path = self.results_dir / filename
+        with open(file_path, 'w', encoding='utf-8') as file:
             json.dump(data, file)
+        return file_path
 
     def load_from_json(self, filename):
         """Load data from a JSON file."""
-        # check if results folder exists
-        if not os.path.exists('results'):
-            os.makedirs('results')
-        with open('results/{}'.format(filename), 'r') as file:
+        file_path = self.results_dir / filename
+        with open(file_path, 'r', encoding='utf-8') as file:
             return json.load(file)
 
     # data_handler.py

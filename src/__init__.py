@@ -2,6 +2,7 @@
 from .scholar import ScholarScraper
 from .venues import VenueScraper
 from .llm_agent import AgentLLM
+from .data_handler import DataHandler
 
 from .scholar_scrapers import (
     AbstractScraper, ArxivScraper, IeeeScraper, SpringerScraper,

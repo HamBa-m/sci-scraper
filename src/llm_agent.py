@@ -6,11 +6,12 @@ import os
 import json
 import logging
 
-# Load configurations from JSON file
-current_dir = os.path.dirname(__file__)
-config_file = os.path.join(current_dir, 'config.json')
-with open(config_file, 'r') as f:
-    config = json.load(f)
+try:
+    from .config import get_config, RESULTS_DIR
+except (ImportError, ValueError):
+    from config import get_config, RESULTS_DIR
+
+config = get_config()
 
 ################
 class AgentLLM:
@@ -66,5 +67,6 @@ class AgentLLM:
         return dataframe
 
     def save_results(self, dataframe):
-        dataframe.to_excel("./results/filtered_papers.xlsx", index=False)
-        logging.info("Filtered papers saved to ./results/filtered_papers.xlsx.")
+        output_file = str(RESULTS_DIR / "filtered_papers.xlsx")
+        dataframe.to_excel(output_file, index=False)
+        logging.info(f"Filtered papers saved to {output_file}.")

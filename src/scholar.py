@@ -14,13 +14,13 @@ from .scholar_scrapers import (
     AAAIScraper, JAIRScraper, JMLRScraper, IJCAIScraper
 )
 from .utils import detect_source, extract_year
+try:
+    from .config import get_config, RESULTS_DIR
+except (ImportError, ValueError):
+    from config import get_config, RESULTS_DIR
 
 ##### Load configuration
-current_dir = os.path.dirname(os.path.realpath(__file__))
-config_file = os.path.join(current_dir, 'config.json')
-with open(config_file, 'r') as f:
-    config = json.load(f)
-    
+config = get_config()
 NUM_PAGES = config['num_pages']
 SCHOLAR_QUERY = config['scholar_query']
 
@@ -92,7 +92,7 @@ class ScholarScraper:
         # convert to dataframe
         df = pd.DataFrame(results, columns=['Title', 'URL', 'Abstract', 'Source', 'Year'])
         # save to excel
-        output_file = "./results/scholar_results.xlsx"
+        output_file = str(RESULTS_DIR / "scholar_results.xlsx")
         df.to_excel(output_file, index=False)
         logging.info(f"Scraping completed. {len(df)} papers saved to {output_file}.")
         return df

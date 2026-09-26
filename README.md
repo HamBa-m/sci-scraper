@@ -30,15 +30,17 @@ This repository provides the complete implementation, intermediate datasets, and
 git clone https://github.com/HamBa-m/sci-scraper.git
 cd sci-scraper
 pip install -r requirements.txt
+
+# (Optional) For EDA and BERTopic topic modeling in notebooks/:
+pip install -r requirements-analysis.txt
 ```
 
 ### Basic Usage
 
-Run the tool via the main script in the `src/` folder using command-line arguments:
+Run the tool from the repository root using command-line arguments:
 
 ```bash
-cd src
-python main.py --mode [scholar|venues|all|none] --filter [True/False]
+python main.py --mode [scholar|venues|all|none] [--filter]
 ```
 
 - `--mode`: Select scraping mode (default: `all`).
@@ -289,7 +291,7 @@ The results from both components are merged into a unified dataset stored in an 
 
 Configurations are loaded from JSON files for easy customization without editing code. Defaults are set for adversarial multi-agent reinforcement learning (MARL), but can be adjusted for any domain:
 
-- **`config.json`** (in `src/`): Adjust scraping parameters, queries, and LLM settings:
+- **`config.json`** (in `src/config/`): Adjust scraping parameters, queries, and LLM settings:
   - `start_year`: Start year for time range (default: 2018).
   - `end_year`: End year for time range (default: 2024).
   - `request_delay`: Delay between requests in seconds (default: 0.2) for ethical scraping.
@@ -299,9 +301,9 @@ Configurations are loaded from JSON files for easy customization without editing
   - `api_key`: Hugging Face API key for LLM access.
   - `model_url`: LLM model path (default: `"microsoft/Phi-3-mini-4k-instruct"`).
 
-- **`keywords.json`** (in `src/`): Define keyword bags for venue scraping and lexical filtering. Edit these lists to adapt the tool to any research field.
+- **`keywords.json`** (in `src/config/`): Define keyword bags for venue scraping and lexical filtering. Edit these lists to adapt the tool to any research field.
 
-- **`venues.json`** (in `src/`): Define venue proceeding URL templates, DOM selectors, and volume mappings for AAMAS, IJCAI, AISTATS, ICML, and ICLR. Add new venues by extending this JSON configuration.
+- **`venues.json`** (in `src/config/`): Define venue proceeding URL templates, DOM selectors, and volume mappings for AAMAS, IJCAI, AISTATS, ICML, and ICLR. Add new venues by extending this JSON configuration.
 
 ---
 
@@ -312,7 +314,7 @@ As a concrete demonstration, `sci-scraper` was utilized to construct the literat
 1. **Initial Lexical Dataset:** Through iterative experimentation with keyword combinations and query strings, we curated an initial dataset of **647 papers** based on lexical matching.
 2. **Automated Semantic Filtering:** We employed Microsoft's **Phi-3.5** model via Hugging Face Hub with a carefully engineered prompt to evaluate paper relevance from titles and abstracts. This reduced the dataset from **647** to **148 papers**.
    - In a manual audit of 60 papers marked as irrelevant, no false negatives were identified, demonstrating high recall in practice and significantly reducing subsequent manual review effort.
-3. **Topic Modeling with BERTopic:** The corpus was analyzed using Sentence-BERT (SBERT), UMAP dimensionality reduction, HDBSCAN clustering, CountVectorizer, c-TF-IDF weighting, and KeyBERT with Maximal Marginal Relevance (MMR). This clustered the surveyed literature into four primary themes:
+3. **Topic Modeling with BERTopic:** The corpus was analyzed using Sentence-BERT (SBERT), UMAP dimensionality reduction, HDBSCAN clustering, CountVectorizer, c-TF-IDF weighting, and KeyBERT with Maximal Marginal Relevance (MMR). See [`notebooks/README.md`](notebooks/README.md) for full reproduction instructions. This clustered the surveyed literature into four primary themes:
    - **Attacks**
    - **Defenses**
    - **Communication**
@@ -333,7 +335,7 @@ Respect site terms, robots.txt, and laws. Use delays to avoid overload. Not for 
 ## Future Work
 
 - Add more publishers/venues.
-- GUI for easier use (ongoing; see `app.py`, `templates/`, and `static/`).
+- GUI for easier use (ongoing; see `web/app.py`, `web/templates/`, and `web/static/`).
 - User control over the logic of keyword combinations.
 
 ## Contributing

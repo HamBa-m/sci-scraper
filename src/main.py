@@ -3,19 +3,19 @@ import argparse
 import pandas as pd
 import logging
 
-from scholar import ScholarScraper
-from venues import VenueScraper
+try:
+    from .scholar import ScholarScraper
+    from .venues import VenueScraper
+    from .llm_agent import AgentLLM
+    from .config import setup_logging, RESULTS_DIR
+except (ImportError, ValueError):
+    from scholar import ScholarScraper
+    from venues import VenueScraper
+    from llm_agent import AgentLLM
+    from config import setup_logging, RESULTS_DIR
 
-from llm_agent import AgentLLM
-
-# Configure logging to use UTF-8 encoding
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('log/main.log', encoding='utf-8')
-    ]
-)
+# Configure centralized logging
+setup_logging("main.log")
 
 def main():
     parser = argparse.ArgumentParser(description='Scrape papers from Google Scholar and conferences')
@@ -47,7 +47,7 @@ def main():
         # merge scholar and venue dataframes
         final_df = pd.concat([scholar_df, venue_df], ignore_index=True)
         final_df.drop_duplicates(subset=["Title"], inplace=True)
-        output_file = "./results/all_results.xlsx"
+        output_file = str(RESULTS_DIR / "all_results.xlsx")
         final_df.to_excel(output_file, index=False)
         logging.info(f"Scraping completed. {len(final_df)} papers saved to {output_file}.")
         logging.info("All scraping tasks completed.")
@@ -57,7 +57,7 @@ def main():
     
     if args.filter:
         llm_agent = AgentLLM()
-        final_df = pd.read_excel("./results/all_results.xlsx")
+        final_df = pd.read_excel(str(RESULTS_DIR / "all_results.xlsx"))
         filtered_df = llm_agent.filter_papers(final_df)
         llm_agent.save_results(filtered_df)
         logging.info("Filtering completed.")
