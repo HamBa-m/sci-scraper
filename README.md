@@ -34,11 +34,10 @@ pip install -r requirements.txt
 
 ### Basic Usage
 
-Run the tool via the main script in the `src/` folder using command-line arguments:
+Run the tool from the repository root using command-line arguments:
 
 ```bash
-cd src
-python main.py --mode [scholar|venues|all|none] --filter [True/False]
+python main.py --mode [scholar|venues|all|none] [--filter]
 ```
 
 - `--mode`: Select scraping mode (default: `all`).
