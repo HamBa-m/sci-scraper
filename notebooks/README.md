@@ -34,7 +34,7 @@ pip install -r requirements-analysis.txt
 ## Reproducing the Analysis
 
 ### 1. Exploratory Data Analysis (`eda.ipynb`)
-- **Input:** `./results/filtred_papers.xlsx` (or `notebooks/papers_content.csv`).
+- **Input:** `./results/filtered_papers.xlsx` (or `notebooks/papers_content.csv`; legacy alias: `filtred_papers.xlsx`).
 - **Analyses Performed:**
   - Distribution of papers across publication years (2018–2024).
   - Source representation across academic venues and digital libraries (IEEE, ACM, Springer, arXiv, NeurIPS, etc.).
